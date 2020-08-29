@@ -25,6 +25,40 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>React App</title>
+    <script>
+      var gapiInitializedCb;
+      window.gapiInitialized = new Promise(
+        (resolve) => (gapiInitializedCb = resolve)
+      );
+
+      function loadGapiClient() {
+        gapi.load("client", () => {
+          gapi.client
+            .init({
+              apiKey: "AIzaSyAitbng83pzlisVGP25vQbNWCQxIsIbIrU",
+              clientId:
+                "286296852291-r5gp7u59tnfhqddmj1vmnc54d73eg37n.apps.googleusercontent.com",
+              discoveryDocs: [
+                "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+              ],
+              scopes: [
+                "https://www.googleapis.com/auth/calendar.readonly",
+                "https://www.googleapis.com/auth/calendar.events.readonly",
+                "https://www.googleapis.com/auth/calendar",
+                "https://www.googleapis.com/auth/calendar.events",
+              ],
+            })
+            .then(gapiInitializedCb);
+        });
+      }
+    </script>
+    <script
+      async
+      defer
+      src="https://apis.google.com/js/api.js"
+      onload="this.onload=function(){};loadGapiClient()"
+      onreadystatechange="if (this.readyState === 'complete') this.onload()"
+    ></script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
