@@ -1,5 +1,5 @@
-import { Observable } from "rxjs";
-import { share, distinctUntilChanged } from "rxjs/operators";
+import { Observable, from, ObservableInput } from "rxjs";
+import { share, distinctUntilChanged, switchMap } from "rxjs/operators";
 
 declare global {
   interface Window {
@@ -12,6 +12,9 @@ interface GapiService {
   signIn: () => void;
   signOut: () => void;
   listCalendars: () => Promise<gapi.client.calendar.CalendarList>;
+  listEvents: (
+    params: gapi.client.calendar.EventsListParameters
+  ) => Promise<gapi.client.calendar.Events>;
 }
 
 export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
@@ -42,10 +45,18 @@ export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
         isSignedIn$,
         signIn: () => auth2.signIn(),
         signOut: () => auth2.signOut(),
-        listCalendars: () => gapi.client.calendar.calendarList.list().then(),
+        listCalendars: () =>
+          gapi.client.calendar.calendarList.list().then(({ result }) => result),
+        listEvents: (params) =>
+          gapi.client.calendar.events.list(params).then(({ result }) => result),
       });
     } catch (ex) {
       reject(ex);
     }
   });
 });
+
+export const gapiService$ = from(gapiService);
+export const invokeGapiService = <T>(
+  fn: (service: GapiService) => ObservableInput<T>
+): Observable<T> => from(gapiService).pipe(switchMap(fn));

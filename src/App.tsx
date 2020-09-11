@@ -1,16 +1,13 @@
-import React, { Suspense } from "react";
-import { signIn, signOut, useIsSignedIn } from "./services";
+import React, { FC, Suspense } from "react";
+import { signIn, useIsSignedIn } from "./services";
+import { WeekView } from "./WeekView";
+import css from "@emotion/css";
 
-const Auth = () => {
+const AuthGateway: FC = ({ children }) => {
   const isSignedIn = useIsSignedIn();
 
   return isSignedIn ? (
-    <div>
-      Signed In :)
-      <button type="button" onClick={signOut}>
-        Sign Out
-      </button>
-    </div>
+    <>{children}</>
   ) : (
     <div>
       Please sign in:
@@ -24,7 +21,13 @@ const Auth = () => {
 function App() {
   return (
     <Suspense fallback={<>Loading...</>}>
-      <Auth />
+      <AuthGateway>
+        <WeekView
+          css={css`
+            height: 100%;
+          `}
+        />
+      </AuthGateway>
     </Suspense>
   );
 }
