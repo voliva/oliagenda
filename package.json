@@ -20,6 +20,8 @@
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.3",
     "rxjs": "^6.6.2",
+    "rxjs-etc": "^10.4.0",
+    "rxjs-traces": "^0.1.0-alpha.11",
     "typescript": "~3.7.2"
   },
   "scripts": {
@@ -50,6 +52,7 @@
     "@types/gapi.auth2": "^0.0.52",
     "@types/gapi.calendar": "^3.0.4",
     "@types/lodash": "^4.14.161",
+    "babel-plugin-react-rxjs": "^0.1.0-alpha.2",
     "patch-package": "^6.2.2",
     "postinstall-postinstall": "^2.1.0"
   }

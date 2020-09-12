@@ -1,17 +1,17 @@
-import React, { FC } from "react";
 import css from "@emotion/css";
-import {
-  startOfWeek,
-  addDays,
-  format,
-  isSameDay,
-  set,
-  differenceInSeconds,
-} from "date-fns";
-import { interval } from "rxjs";
-import { map, startWith } from "rxjs/operators";
 import { bind } from "@react-rxjs/core";
-import { event$, useEvents, useEventsByDay } from "./services";
+import {
+  addDays,
+  differenceInSeconds,
+  format,
+  set,
+  startOfWeek,
+} from "date-fns";
+import React, { FC } from "react";
+import { interval, of } from "rxjs";
+import { concatIfEmpty, startWithTimeout } from "rxjs-etc/operators";
+import { map, skipWhile, startWith, takeWhile } from "rxjs/operators";
+import { useDailyEvents, useEventsByDay, useWeeklyEvents } from "./services";
 
 export const WeekView: FC<{
   className?: string;
@@ -28,7 +28,7 @@ export const WeekView: FC<{
 
       <Events />
 
-      <DayTasks />
+      <DailyTasks />
       <WeekTasks />
     </div>
   );
@@ -124,17 +124,13 @@ const Events = () => {
 const [useCurrentTimePos] = bind((date: Date) =>
   currentTime$.pipe(
     map((now) => {
-      const isToday = isSameDay(now, date);
-      if (!isToday) {
-        return null;
-      }
-      const startTime = set(now, {
+      const startTime = set(date, {
         hours: START_HOUR,
         minutes: 0,
         seconds: 0,
         milliseconds: 0,
       });
-      const endTime = set(now, {
+      const endTime = set(date, {
         hours: END_HOUR,
         minutes: 0,
         seconds: 0,
@@ -143,24 +139,28 @@ const [useCurrentTimePos] = bind((date: Date) =>
       const totalSeconds = differenceInSeconds(endTime, startTime);
       const currentSeconds = differenceInSeconds(now, startTime);
       const result = currentSeconds / totalSeconds;
-      if (result > 1 || result < 0) {
-        return null;
-      }
       return result;
-    })
+    }),
+    // Only keep stream alive for those that will show a bar in the future
+    takeWhile((v) => v <= 1),
+    skipWhile((v) => v < 0),
+    startWithTimeout(null, 0),
+    concatIfEmpty(of(null))
+    /** Alternatively, just map to null if <0 or >1, but on every tick it would
+     * emit a new `null`, solvable with `distinctUntilChanged` but nvm :)
+     */
   )
 );
 
-// const [useDayEvents] = bind((day: Date) => event$.pipe(
-//   map(list => list.filter())
-// ))
 const DayStack: FC<{ className?: string; day: Date }> = ({
   className,
   day,
 }) => {
   const currentTimePos = useCurrentTimePos(day);
   const events = useEventsByDay(day);
-  console.log(day.toISOString(), events);
+  if (events.length) {
+    console.log(day.toISOString(), events);
+  }
 
   const currentTimeBar = currentTimePos ? (
     <div
@@ -170,6 +170,10 @@ const DayStack: FC<{ className?: string; day: Date }> = ({
         top: ${currentTimePos * 100}%;
         left: 0;
         width: 100%;
+
+        @media print {
+          display: none;
+        }
       `}
     />
   ) : null;
@@ -217,46 +221,74 @@ const GridBackground = () => {
   );
 };
 
-const DayTasks = () => (
-  <div
-    css={css`
-      flex: 0 0 auto;
-      max-height: 25%;
-      display: flex;
-    `}
-  >
-    <LegendPadding />
-    {DAYS.map((_, d) => (
-      <div
-        key={d}
-        css={css`
-          border: thin solid black;
-          border-top: none;
-          flex: 1 1 auto;
-          overflow: auto;
+const DailyTasks = () => {
+  return (
+    <div
+      css={css`
+        flex: 0 0 auto;
+        max-height: 25%;
+        display: flex;
+      `}
+    >
+      <LegendPadding />
+      {DAYS.map((day, d) => (
+        <DayTasks
+          key={d}
+          day={day}
+          css={css`
+            flex: 1 1 0;
+          `}
+        />
+      ))}
+    </div>
+  );
+};
 
-          &:not(:last-child) {
-            border-right: none;
-          }
-        `}
-      >
-        Daily
-      </div>
-    ))}
-  </div>
-);
+const DayTasks: FC<{ day: Date; className?: string }> = ({
+  day,
+  className,
+}) => {
+  const events = useDailyEvents(day);
 
-const WeekTasks = () => (
-  <div
-    css={css`
-      flex: 0 0 auto;
-      overflow: auto;
-      max-height: 25%;
-    `}
-  >
-    Week
-  </div>
-);
+  return (
+    <div
+      css={css`
+        border: thin solid black;
+        border-top: none;
+        overflow: auto;
+
+        &:not(:last-child) {
+          border-right: none;
+        }
+      `}
+      className={className}
+    >
+      <div>Daily Tasks</div>
+      {events.map((event) => (
+        <div key={event.id}>{event.title}</div>
+      ))}
+    </div>
+  );
+};
+
+const WeekTasks = () => {
+  const weeklyEvents = useWeeklyEvents();
+
+  return (
+    <div
+      css={css`
+        flex: 0 0 auto;
+        overflow: auto;
+        max-height: 25%;
+      `}
+    >
+      <div>Weekly tasks</div>
+      {weeklyEvents.map((event) => (
+        <div key={event.id}>{event.title}</div>
+      ))}
+    </div>
+  );
+};
 
 const LegendPadding: FC<{ className?: string }> = ({ className }) => (
   <div
