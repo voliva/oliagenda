@@ -2,16 +2,21 @@ import css from "@emotion/css";
 import { bind } from "@react-rxjs/core";
 import {
   addDays,
+  compareAsc,
+  differenceInCalendarDays,
   differenceInSeconds,
   format,
+  getTime,
   set,
   startOfWeek,
 } from "date-fns";
+import { areIntervalsOverlapping, max } from "date-fns/esm";
 import React, { FC, useState } from "react";
-import { interval, of } from "rxjs";
+import { from, interval, of } from "rxjs";
 import { concatIfEmpty, startWithTimeout } from "rxjs-etc/operators";
 import { map, skipWhile, startWith, takeWhile } from "rxjs/operators";
 import { useDailyEvents, useEventsByDay, useWeeklyEvents } from "./services";
+import { CalendarEvent } from "./services/mappers";
 import { useResize } from "./useResize";
 
 export const WeekView: FC<{
@@ -122,25 +127,35 @@ const Events = () => {
   );
 };
 
+const getTimePosition = (time: Date) => {
+  const startTime = set(time, {
+    hours: START_HOUR,
+    minutes: 0,
+    seconds: 0,
+    milliseconds: 0,
+  });
+  const endTime = set(time, {
+    hours: END_HOUR,
+    minutes: 0,
+    seconds: 0,
+    milliseconds: 0,
+  });
+  const totalSeconds = differenceInSeconds(endTime, startTime);
+  const currentSeconds = differenceInSeconds(time, startTime);
+  const result = currentSeconds / totalSeconds;
+  return result;
+};
+
 const [useCurrentTimePos] = bind((date: Date) =>
   currentTime$.pipe(
     map((now) => {
-      const startTime = set(date, {
-        hours: START_HOUR,
-        minutes: 0,
-        seconds: 0,
-        milliseconds: 0,
-      });
-      const endTime = set(date, {
-        hours: END_HOUR,
-        minutes: 0,
-        seconds: 0,
-        milliseconds: 0,
-      });
-      const totalSeconds = differenceInSeconds(endTime, startTime);
-      const currentSeconds = differenceInSeconds(now, startTime);
-      const result = currentSeconds / totalSeconds;
-      return result;
+      const dayDiff = differenceInCalendarDays(now, date);
+      if (dayDiff < 0) {
+        return -1;
+      } else if (dayDiff > 0) {
+        return 2;
+      }
+      return getTimePosition(now);
     }),
     // Only keep stream alive for those that will show a bar in the future
     takeWhile((v) => v <= 1),
@@ -153,15 +168,50 @@ const [useCurrentTimePos] = bind((date: Date) =>
   )
 );
 
+interface PrintableEvent extends CalendarEvent {
+  level: number;
+  positions: {
+    start: number;
+    end: number;
+  };
+}
 const DayStack: FC<{ className?: string; day: Date }> = ({
   className,
   day,
 }) => {
   const currentTimePos = useCurrentTimePos(day);
   const events = useEventsByDay(day);
-  if (events.length) {
-    console.log(day.toISOString(), events);
-  }
+
+  let levels: Array<{
+    start: Date;
+    end: Date;
+  }> = [];
+  const printableEvents = [...events]
+    .sort((e1, e2) => compareAsc(e1.range.start, e2.range.start))
+    .map(
+      (evt): PrintableEvent => {
+        let l = 0;
+        while (levels[l] && areIntervalsOverlapping(evt.range, levels[l])) {
+          l++;
+        }
+        if (!levels[l]) {
+          levels[l] = {
+            ...evt.range,
+          };
+        } else {
+          levels[l].end = max([levels[l].end, evt.range.end]);
+        }
+
+        return {
+          ...evt,
+          level: l,
+          positions: {
+            start: getTimePosition(evt.range.start),
+            end: getTimePosition(evt.range.end),
+          },
+        };
+      }
+    );
 
   const currentTimeBar = currentTimePos ? (
     <div
@@ -188,7 +238,44 @@ const DayStack: FC<{ className?: string; day: Date }> = ({
       `}
       className={className}
     >
+      {printableEvents.map((evt) => (
+        <EventDisplay key={evt.id} event={evt} />
+      ))}
       {currentTimeBar}
+    </div>
+  );
+};
+
+const EventDisplay: FC<{
+  event: PrintableEvent;
+}> = ({ event }) => {
+  let left = 0;
+  for (let i = 1; i <= event.level; i++) {
+    left += 10 / i;
+  }
+
+  return (
+    <div
+      css={css`
+        position: absolute;
+        background: #eab;
+        top: ${event.positions.start * 100}%;
+        bottom: ${(1 - event.positions.end) * 100}%;
+        padding: 0.1rem;
+        min-height: 1.2rem;
+        left: ${left}%;
+        right: 0;
+        overflow: hidden;
+        border: ${event.level === 0 ? "none" : "thin solid white"};
+
+        @media print {
+          background: white;
+          color: black;
+          border: thin solid black;
+        }
+      `}
+    >
+      {event.title}
     </div>
   );
 };
@@ -204,6 +291,7 @@ const GridBackground = () => {
         height: 100%;
         display: flex;
         flex-direction: column;
+        overflow: hidden;
       `}
     >
       {hours.map((hour) => (
@@ -213,6 +301,7 @@ const GridBackground = () => {
             flex: 1 1 0;
             border-bottom: thin solid lightgray;
             padding: 0.1rem;
+            overflow: hidden;
           `}
         >
           {hour > 9 ? `${hour}:00` : `0${hour}:00`}
