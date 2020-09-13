@@ -7,11 +7,12 @@ import {
   set,
   startOfWeek,
 } from "date-fns";
-import React, { FC } from "react";
+import React, { FC, useState } from "react";
 import { interval, of } from "rxjs";
 import { concatIfEmpty, startWithTimeout } from "rxjs-etc/operators";
 import { map, skipWhile, startWith, takeWhile } from "rxjs/operators";
 import { useDailyEvents, useEventsByDay, useWeeklyEvents } from "./services";
+import { useResize } from "./useResize";
 
 export const WeekView: FC<{
   className?: string;
@@ -249,9 +250,11 @@ const DayTasks: FC<{ day: Date; className?: string }> = ({
   className,
 }) => {
   const events = useDailyEvents(day);
+  const [ref, printSize] = usePrintFontRatio();
 
   return (
     <div
+      ref={ref}
       css={css`
         border: thin solid black;
         border-top: none;
@@ -260,6 +263,8 @@ const DayTasks: FC<{ day: Date; className?: string }> = ({
         &:not(:last-child) {
           border-right: none;
         }
+
+        ${printSize};
       `}
       className={className}
     >
@@ -273,13 +278,17 @@ const DayTasks: FC<{ day: Date; className?: string }> = ({
 
 const WeekTasks = () => {
   const weeklyEvents = useWeeklyEvents();
+  const [ref, printSize] = usePrintFontRatio();
 
   return (
     <div
+      ref={ref}
       css={css`
         flex: 0 0 auto;
         overflow: auto;
         max-height: 25%;
+
+        ${printSize};
       `}
     >
       <div>Weekly tasks</div>
@@ -300,3 +309,18 @@ const LegendPadding: FC<{ className?: string }> = ({ className }) => (
     className={className}
   />
 );
+
+const usePrintFontRatio = () => {
+  const [printSize, setPrintSize] = useState("1em");
+  const ref = useResize((rect, element) => {
+    const fontRatio = Math.min(1, rect.height / element.scrollHeight);
+    setPrintSize(fontRatio + "em");
+  });
+  const css = `
+    @media print {
+      font-size: ${printSize};
+      overflow: visible;
+    }
+  `;
+  return [ref, css] as const;
+};
