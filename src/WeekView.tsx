@@ -6,15 +6,20 @@ import {
   differenceInCalendarDays,
   differenceInSeconds,
   format,
-  getTime,
   set,
   startOfWeek,
 } from "date-fns";
 import { areIntervalsOverlapping, max } from "date-fns/esm";
 import React, { FC, useState } from "react";
-import { from, interval, of } from "rxjs";
-import { concatIfEmpty, startWithTimeout } from "rxjs-etc/operators";
-import { map, skipWhile, startWith, takeWhile } from "rxjs/operators";
+import { interval } from "rxjs";
+import { startWithTimeout } from "rxjs-etc/operators";
+import {
+  defaultIfEmpty,
+  map,
+  skipWhile,
+  startWith,
+  takeWhile,
+} from "rxjs/operators";
 import { useDailyEvents, useEventsByDay, useWeeklyEvents } from "./services";
 import { CalendarEvent } from "./services/mappers";
 import { useResize } from "./useResize";
@@ -161,7 +166,7 @@ const [useCurrentTimePos] = bind((date: Date) =>
     takeWhile((v) => v <= 1),
     skipWhile((v) => v < 0),
     startWithTimeout(null, 0),
-    concatIfEmpty(of(null))
+    defaultIfEmpty(null as number | null)
     /** Alternatively, just map to null if <0 or >1, but on every tick it would
      * emit a new `null`, solvable with `distinctUntilChanged` but nvm :)
      */

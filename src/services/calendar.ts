@@ -1,4 +1,4 @@
-import { bind } from "@react-rxjs/core";
+import { bind, shareLatest } from "@react-rxjs/core";
 import { collect, split } from "@react-rxjs/utils";
 import {
   addDays,
@@ -10,14 +10,17 @@ import {
   startOfWeek,
 } from "date-fns";
 import { isEqual, keyBy } from "lodash";
-import { concat, EMPTY, merge, Observable, of } from "rxjs";
+import { combineLatest, concat, EMPTY, Observable, of } from "rxjs";
+import { startWithTimeout } from "rxjs-etc/dist/esm/operators";
+import { addDebugTag } from "rxjs-traces";
 import {
   concatMap,
+  delay,
   exhaustMap,
   map,
   mergeMap,
   pairwise,
-  reduce,
+  repeatWhen,
   scan,
   share,
   startWith,
@@ -33,28 +36,33 @@ export const [useCalendarList, calendarList$] = bind(
   )
 );
 
-export const [useEventsFromCalendar, eventsFromCalendar$] = bind(
-  (calendarId: string) =>
-    invokeGapiService((service) =>
-      service.listEvents({
-        calendarId,
-        timeMin: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
-        timeMax: endOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
-        showDeleted: false,
-        orderBy: "startTime",
-        singleEvents: true,
-      })
-    ).pipe(map((events) => events.items.map(mapEventFromGoogle)))
+const [, eventsFromCalendar$] = bind((calendarId: string) =>
+  invokeGapiService((service) =>
+    service.listEvents({
+      calendarId,
+      timeMin: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
+      timeMax: endOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
+      showDeleted: false,
+      orderBy: "startTime",
+      singleEvents: true,
+    })
+  ).pipe(
+    repeatWhen((notifier) => notifier.pipe(delay(60 * 1000))),
+    map((events) => events.items.map(mapEventFromGoogle))
+  )
 );
 
-export const [useEvents, event$] = bind(
+const [, event$] = bind(
   calendarList$.pipe(
     switchMap((list) =>
-      merge(...list.map((calendar) => eventsFromCalendar$(calendar.id))).pipe(
-        reduce((acc, events) => [...acc, ...events], [] as CalendarEvent[])
+      combineLatest(
+        list.map((calendar) => eventsFromCalendar$(calendar.id))
+      ).pipe(
+        map((calendarEvents) =>
+          calendarEvents.reduce((acc, events) => [...acc, ...events])
+        )
       )
-    ),
-    tap((events) => console.log({ events }))
+    )
   )
 );
 
@@ -87,6 +95,7 @@ const eventChanges$ = event$.pipe(
       removedEvents.map((event) => ({ action: "removed", event }))
     );
   }),
+  addDebugTag("eventChanges$"),
   share()
 );
 
@@ -126,7 +135,9 @@ const timeEventsByDay$ = categorizedEvent$.pipe(
     },
     (group$) => group$.pipe(accumulateEvents())
   ),
-  collect()
+  collect(),
+  addDebugTag("timeEventsByDay$"),
+  shareLatest()
 );
 
 export const [useEventsByDay] = bind((date: Date) =>
@@ -176,7 +187,9 @@ const dailyEvents$ = categorizedEvent$.pipe(
     },
     (group$) => group$.pipe(accumulateEvents())
   ),
-  collect()
+  collect(),
+  addDebugTag("dailyEvents$"),
+  shareLatest() // TODO Removing this share latest messes up the rxjs-traces tree
 );
 
 export const [useDailyEvents] = bind((date: Date) =>
@@ -191,7 +204,8 @@ export const [useDailyEvents] = bind((date: Date) =>
 export const [useWeeklyEvents] = bind(
   categorizedEvent$.pipe(
     mergeMap((group$) => (group$.key === "week" ? group$ : EMPTY)),
-    accumulateEvents()
+    accumulateEvents(),
+    startWithTimeout([] as CalendarEvent[], 0)
   )
 );
 
