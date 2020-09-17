@@ -125,8 +125,8 @@ const Events = () => {
                 border-right: none;
               }
             `}
-            onEventClick={id => console.log('event click', id)}
-            onNewEvent={(start, end) => console.log('new event', start, end)}
+            onEventClick={(id) => console.log("event click", id)}
+            onNewEvent={(start, end) => console.log("new event", start, end)}
           />
         ))}
       </div>
@@ -184,15 +184,10 @@ interface PrintableEvent extends CalendarEvent {
 }
 const DayStack: FC<{
   className?: string;
-  day: Date,
-  onEventClick?: (eventId: string) => void,
-  onNewEvent?: (startTime: Date, endTime: Date) => void
-}> = ({
-  className,
-  day,
-  onEventClick = noop,
-  onNewEvent = noop
-}) => {
+  day: Date;
+  onEventClick?: (eventId: string) => void;
+  onNewEvent?: (startTime: Date, endTime: Date) => void;
+}> = ({ className, day, onEventClick = noop, onNewEvent = noop }) => {
   const currentTimePos = useCurrentTimePos(day);
   const events = useEventsByDay(day);
   const containerHeight = useRef(0);
@@ -284,14 +279,22 @@ const DayStack: FC<{
   );
 };
 
+// Sum(1/n^1.1) n=1..Infinity converges to 10.5844
+const HARMONIC_SCALE = 1 / 10.5844;
+const MAX_LEVEL = 9;
+const factors = new Array(MAX_LEVEL + 1).fill(0);
+for (let i = 1; i < factors.length; i++) {
+  factors[i] = factors[i - 1] + HARMONIC_SCALE / Math.pow(i, 1.1);
+}
+const leftPositions = factors.map((f) => f * 100 + "%");
+const rightPositions = factors.map((f) => 1 - f * 4 + "rem");
+
 const EventDisplay: FC<{
   event: PrintableEvent;
   onClick?: (event: MouseEvent) => void;
 }> = ({ event, ...rest }) => {
-  let left = 0;
-  for (let i = 1; i <= event.level; i++) {
-    left += 10 / i;
-  }
+  const left = leftPositions[Math.min(event.level, MAX_LEVEL)];
+  const right = rightPositions[Math.min(event.level, MAX_LEVEL)];
 
   return (
     <div
@@ -302,8 +305,8 @@ const EventDisplay: FC<{
         bottom: ${(1 - event.positions.end) * 100}%;
         padding: 0.1rem;
         min-height: 1.2rem;
-        left: ${left}%;
-        right: 1rem;
+        left: ${left};
+        right: ${right};
         overflow: hidden;
         border: thin solid white;
         border-radius: 0.3rem;
