@@ -25,7 +25,6 @@ import {
   share,
   startWith,
   switchMap,
-  tap,
 } from "rxjs/operators";
 import { invokeGapiService } from "./gapi";
 import { CalendarEvent, mapEventFromGoogle } from "./mappers";

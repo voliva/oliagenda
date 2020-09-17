@@ -7,11 +7,12 @@ import {
   differenceInSeconds,
   format,
   set,
+  setHours,
   startOfWeek,
 } from "date-fns";
-import { areIntervalsOverlapping, max } from "date-fns/esm";
-import React, { FC, useState } from "react";
-import { interval } from "rxjs";
+import { addMinutes, areIntervalsOverlapping, max } from "date-fns/esm";
+import React, { FC, MouseEvent, useRef, useState } from "react";
+import { interval, noop } from "rxjs";
 import { startWithTimeout } from "rxjs-etc/operators";
 import {
   defaultIfEmpty,
@@ -51,9 +52,8 @@ const START_DATE = startOfWeek(TODAY, { weekStartsOn: 1 });
 const DAYS = new Array(7).fill(0).map((_, i) => addDays(START_DATE, i));
 const START_HOUR = 8;
 const END_HOUR = 20;
-const hours = new Array(END_HOUR - START_HOUR)
-  .fill(0)
-  .map((_, i) => START_HOUR + i);
+const HOUR_RANGE = END_HOUR - START_HOUR;
+const hours = new Array(HOUR_RANGE).fill(0).map((_, i) => START_HOUR + i);
 const currentTime$ = interval(30 * 1000).pipe(
   startWith(0),
   map(() => new Date())
@@ -125,6 +125,8 @@ const Events = () => {
                 border-right: none;
               }
             `}
+            onEventClick={id => console.log('event click', id)}
+            onNewEvent={(start, end) => console.log('new event', start, end)}
           />
         ))}
       </div>
@@ -180,12 +182,21 @@ interface PrintableEvent extends CalendarEvent {
     end: number;
   };
 }
-const DayStack: FC<{ className?: string; day: Date }> = ({
+const DayStack: FC<{
+  className?: string;
+  day: Date,
+  onEventClick?: (eventId: string) => void,
+  onNewEvent?: (startTime: Date, endTime: Date) => void
+}> = ({
   className,
   day,
+  onEventClick = noop,
+  onNewEvent = noop
 }) => {
   const currentTimePos = useCurrentTimePos(day);
   const events = useEventsByDay(day);
+  const containerHeight = useRef(0);
+  const ref = useResize((rect) => (containerHeight.current = rect.height));
 
   let levels: Array<{
     start: Date;
@@ -234,17 +245,39 @@ const DayStack: FC<{ className?: string; day: Date }> = ({
     />
   ) : null;
 
+  const handleAreaClick = (evt: MouseEvent) => {
+    const y = evt.nativeEvent.offsetY;
+    const pct = y / containerHeight.current;
+    const minutes = pct * HOUR_RANGE * 60;
+    const startOfDay = setHours(day, START_HOUR);
+    const start = addMinutes(startOfDay, Math.floor(minutes / 30) * 30);
+    const end = addMinutes(startOfDay, Math.floor(minutes / 30) * 30 + 60);
+    onNewEvent(start, end);
+  };
+
+  const handleEventClick = (id: string, event: MouseEvent) => {
+    event.stopPropagation();
+    onEventClick(id);
+  };
+
   return (
     <div
+      ref={ref}
       css={css`
         border: thin solid black;
         overflow: hidden;
         position: relative;
+        cursor: pointer;
       `}
+      onClick={handleAreaClick}
       className={className}
     >
       {printableEvents.map((evt) => (
-        <EventDisplay key={evt.id} event={evt} />
+        <EventDisplay
+          key={evt.id}
+          event={evt}
+          onClick={(event) => handleEventClick(evt.id, event)}
+        />
       ))}
       {currentTimeBar}
     </div>
@@ -253,7 +286,8 @@ const DayStack: FC<{ className?: string; day: Date }> = ({
 
 const EventDisplay: FC<{
   event: PrintableEvent;
-}> = ({ event }) => {
+  onClick?: (event: MouseEvent) => void;
+}> = ({ event, ...rest }) => {
   let left = 0;
   for (let i = 1; i <= event.level; i++) {
     left += 10 / i;
@@ -269,16 +303,27 @@ const EventDisplay: FC<{
         padding: 0.1rem;
         min-height: 1.2rem;
         left: ${left}%;
-        right: 0;
+        right: 1rem;
         overflow: hidden;
-        border: ${event.level === 0 ? "none" : "thin solid white"};
+        border: thin solid white;
+        border-radius: 0.3rem;
+        transition: box-shadow 0.15s, transform 0.15s;
+
+        &:hover {
+          z-index: 1;
+          box-shadow: 1px 1px 5px 0px rgba(0, 0, 0, 0.75);
+          transform: translate(-50%, -50%) scale(1.02) translate(50%, 50%)
+            translateX(0.1rem);
+        }
 
         @media print {
           background: white;
           color: black;
           border: thin solid black;
+          right: 0;
         }
       `}
+      {...rest}
     >
       {event.title}
     </div>
