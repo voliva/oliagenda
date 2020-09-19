@@ -1,14 +1,5 @@
 import { parseISO } from "date-fns";
-
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  range: {
-    start: Date;
-    end: Date;
-  };
-  description: string;
-}
+import { CalendarEvent } from "./model";
 
 export const mapEventFromGoogle = (
   event: gapi.client.calendar.Event

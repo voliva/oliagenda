@@ -1,22 +1,7 @@
-import React, { FC, Suspense } from "react";
-import { signIn, useIsSignedIn } from "./services";
-import { WeekView } from "./WeekView";
+import React, { Suspense } from "react";
+import { WeekView } from "./weekView/WeekView";
 import css from "@emotion/css";
-
-const AuthGateway: FC = ({ children }) => {
-  const isSignedIn = useIsSignedIn();
-
-  return isSignedIn ? (
-    <>{children}</>
-  ) : (
-    <div>
-      Please sign in:
-      <button type="button" onClick={signIn}>
-        Sign In with Google
-      </button>
-    </div>
-  );
-};
+import { AuthGateway } from "./auth";
 
 function App() {
   return (

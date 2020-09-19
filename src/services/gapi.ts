@@ -1,5 +1,7 @@
 import { Observable, from, ObservableInput } from "rxjs";
 import { share, distinctUntilChanged, switchMap } from "rxjs/operators";
+import { mapEventFromGoogle } from "./mappers";
+import { CalendarEvent } from "./model";
 
 declare global {
   interface Window {
@@ -14,7 +16,7 @@ interface GapiService {
   listCalendars: () => Promise<gapi.client.calendar.CalendarList>;
   listEvents: (
     params: gapi.client.calendar.EventsListParameters
-  ) => Promise<gapi.client.calendar.Events>;
+  ) => Promise<CalendarEvent[]>;
 }
 
 export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
@@ -48,7 +50,9 @@ export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
         listCalendars: () =>
           gapi.client.calendar.calendarList.list().then(({ result }) => result),
         listEvents: (params) =>
-          gapi.client.calendar.events.list(params).then(({ result }) => result),
+          gapi.client.calendar.events
+            .list(params)
+            .then(({ result }) => result.items.map(mapEventFromGoogle)),
       });
     } catch (ex) {
       reject(ex);

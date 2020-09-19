@@ -1,5 +1,5 @@
 import { bind } from "@react-rxjs/core";
-import { gapiService, invokeGapiService } from "./gapi";
+import { gapiService, invokeGapiService } from "../services";
 
 export const [useIsSignedIn] = bind(
   invokeGapiService((service) => service.isSignedIn$)

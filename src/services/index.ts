@@ -1,2 +1,2 @@
-export * from "./auth";
-export * from "./calendar";
+export * from "./model";
+export * from "./gapi";
