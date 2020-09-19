@@ -1,7 +1,9 @@
-import React, { Suspense } from "react";
-import { WeekView } from "./weekView/WeekView";
+import React, { lazy, Suspense } from "react";
 import css from "@emotion/css";
 import { AuthGateway } from "./auth";
+
+const WeekViewPromise = import("./weekView");
+const WeekView = lazy(() => WeekViewPromise);
 
 function App() {
   return (

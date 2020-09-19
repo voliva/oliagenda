@@ -12,7 +12,7 @@ import { EMPTY, Observable, of } from "rxjs";
 import { startWithTimeout } from "rxjs-etc/dist/esm/operators";
 import { addDebugTag } from "rxjs-traces";
 import { concatMap, exhaustMap, map, mergeMap, scan } from "rxjs/operators";
-import { eventChanges$ } from "../calendar";
+import { coldEventChange$ } from "../calendar";
 import { CalendarEvent } from "../services";
 
 const accumulateEvents = () => (
@@ -38,7 +38,7 @@ const accumulateEvents = () => (
   );
 
 // Split into weekly-daily-time
-const categorizedEvent$ = eventChanges$.pipe(
+const categorizedEvent$ = coldEventChange$.pipe(
   split(({ event }) => categorizeEvent(event))
 );
 

@@ -1,7 +1,7 @@
 import { bind } from "@react-rxjs/core";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { keyBy } from "lodash";
-import { combineLatest, concat } from "rxjs";
+import { combineLatest, concat, EMPTY, merge } from "rxjs";
 import { addDebugTag } from "rxjs-traces";
 import {
   delay,
@@ -11,7 +11,10 @@ import {
   share,
   startWith,
   switchMap,
+  take,
+  takeUntil,
 } from "rxjs/operators";
+import { isSignedIn$ } from "./auth/auth";
 import { CalendarEvent, invokeGapiService } from "./services";
 
 export const [useCalendarList, calendarList$] = bind(
@@ -47,6 +50,10 @@ export const [, event$] = bind(
   )
 );
 
+export interface EventChange {
+  action: "new" | "removed";
+  event: CalendarEvent;
+}
 export const eventChanges$ = event$.pipe(
   startWith([] as CalendarEvent[]),
   pairwise(),
@@ -68,14 +75,29 @@ export const eventChanges$ = event$.pipe(
       }
     });
 
-    return concat<{
-      action: "new" | "removed";
-      event: CalendarEvent;
-    }>(
+    return concat<EventChange>(
       newEvents.map((event) => ({ action: "new", event })),
       removedEvents.map((event) => ({ action: "removed", event }))
     );
   }),
   addDebugTag("eventChanges$"),
   share()
+);
+
+isSignedIn$
+  .pipe(switchMap((isSignedIn) => (isSignedIn ? EMPTY : eventChanges$)))
+  .subscribe();
+
+export const coldEventChange$ = merge(
+  eventChanges$,
+  event$.pipe(
+    take(1),
+    takeUntil(eventChanges$),
+    switchMap((events) =>
+      events.map<EventChange>((event) => ({
+        action: "new" as const,
+        event,
+      }))
+    )
+  )
 );
