@@ -1,6 +1,6 @@
 import css from "@emotion/css";
 import React from "react";
-import { HOURS } from "./constants";
+import { HOURS } from "./streams/constants";
 
 export const GridBackground = () => {
   return (

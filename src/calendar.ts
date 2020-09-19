@@ -1,13 +1,14 @@
 import { bind } from "@react-rxjs/core";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { keyBy } from "lodash";
-import { combineLatest, concat, EMPTY, merge } from "rxjs";
+import { combineLatest, concat, EMPTY, merge, Observable } from "rxjs";
 import { addDebugTag } from "rxjs-traces";
 import {
   delay,
   map,
   pairwise,
   repeatWhen,
+  scan,
   share,
   startWith,
   switchMap,
@@ -101,3 +102,20 @@ export const coldEventChange$ = merge(
     )
   )
 );
+
+export const accumulateEvents = () => (event$: Observable<EventChange>) =>
+  event$.pipe(
+    scan((events, { action, event }) => {
+      switch (action) {
+        case "new":
+          return {
+            ...events,
+            [event.id]: event,
+          };
+        case "removed":
+          const { [event.id]: _, ...result } = events;
+          return result;
+      }
+    }, {} as Record<string, CalendarEvent>),
+    map((result) => Object.values(result))
+  );

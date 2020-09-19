@@ -1,9 +1,9 @@
 import css from "@emotion/css";
 import React, { FC } from "react";
 import { usePrintFontRatio } from "../lib";
-import { DAYS } from "./constants";
+import { DAYS } from "./streams/constants";
 import { LegendPadding } from "./LegendPadding";
-import { useDailyEvents } from "./weekViewEvents";
+import { useDailyEvents } from "./streams/weekViewEvents";
 
 export const DailyTasks = () => {
   return (

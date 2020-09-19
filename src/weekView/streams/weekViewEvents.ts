@@ -1,41 +1,13 @@
 import { bind, shareLatest } from "@react-rxjs/core";
 import { collect, split } from "@react-rxjs/utils";
-import {
-  addDays,
-  differenceInDays,
-  getDay,
-  isSameDay,
-  startOfDay,
-} from "date-fns";
-import { isEqual } from "lodash";
-import { EMPTY, Observable, of } from "rxjs";
+import { addDays, isSameDay, startOfDay } from "date-fns";
+import { EMPTY, of } from "rxjs";
 import { startWithTimeout } from "rxjs-etc/dist/esm/operators";
 import { addDebugTag } from "rxjs-traces";
-import { concatMap, exhaustMap, map, mergeMap, scan } from "rxjs/operators";
-import { coldEventChange$ } from "../calendar";
-import { CalendarEvent } from "../services";
-
-const accumulateEvents = () => (
-  event$: Observable<{
-    action: "new" | "removed";
-    event: CalendarEvent;
-  }>
-) =>
-  event$.pipe(
-    scan((events, { action, event }) => {
-      switch (action) {
-        case "new":
-          return {
-            ...events,
-            [event.id]: event,
-          };
-        case "removed":
-          const { [event.id]: _, ...result } = events;
-          return result;
-      }
-    }, {} as Record<string, CalendarEvent>),
-    map((result) => Object.values(result))
-  );
+import { concatMap, exhaustMap, mergeMap } from "rxjs/operators";
+import { accumulateEvents, coldEventChange$ } from "../../calendar";
+import { CalendarEvent } from "../../services";
+import { categorizeEvent } from "./util";
 
 // Split into weekly-daily-time
 const categorizedEvent$ = coldEventChange$.pipe(
@@ -124,19 +96,3 @@ export const [useWeeklyEvents] = bind(
     startWithTimeout([] as CalendarEvent[], 0)
   )
 );
-
-function categorizeEvent(event: CalendarEvent) {
-  if (isSameDay(event.range.start, event.range.end)) {
-    return "time" as const;
-  }
-
-  if (isEqual(addDays(event.range.start, 1), event.range.end)) {
-    return "day" as const;
-  }
-
-  const diff = differenceInDays(event.range.end, event.range.start);
-  if (getDay(event.range.start) === 1 && diff === 7) {
-    return "week" as const;
-  }
-  return "multi" as const;
-}

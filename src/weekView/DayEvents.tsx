@@ -10,9 +10,9 @@ import React, { FC, useRef, MouseEvent } from "react";
 import { noop } from "rxjs";
 import { useResize } from "../lib";
 import { CalendarEvent } from "../services";
-import { HOUR_RANGE, START_HOUR } from "./constants";
-import { getTimePosition, useCurrentTimePos } from "./time";
-import { useEventsByDay } from "./weekViewEvents";
+import { HOUR_RANGE, START_HOUR } from "./streams/constants";
+import { getTimePosition, useCurrentTimePos } from "./streams/time";
+import { useEventsByDay } from "./streams/weekViewEvents";
 
 interface PrintableEvent extends CalendarEvent {
   level: number;

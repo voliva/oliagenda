@@ -1,7 +1,7 @@
 import css from "@emotion/css";
 import React from "react";
 import { usePrintFontRatio } from "../lib";
-import { useWeeklyEvents } from "./weekViewEvents";
+import { useWeeklyEvents } from "./streams/weekViewEvents";
 
 export const WeekTasks = () => {
   const weeklyEvents = useWeeklyEvents();
