@@ -1,22 +1,30 @@
-import { bind } from "@react-rxjs/core";
+import { bind, shareLatest } from "@react-rxjs/core";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { keyBy } from "lodash";
-import { combineLatest, concat, EMPTY, merge, Observable } from "rxjs";
+import {
+  combineLatest,
+  concat,
+  EMPTY,
+  interval,
+  merge,
+  Observable,
+  of,
+  Subject,
+} from "rxjs";
 import { addDebugTag } from "rxjs-traces";
 import {
-  delay,
   map,
   pairwise,
-  repeatWhen,
   scan,
   share,
   startWith,
   switchMap,
+  switchMapTo,
   take,
   takeUntil,
 } from "rxjs/operators";
 import { isSignedIn$ } from "./auth/auth";
-import { CalendarEvent, invokeGapiService } from "./services";
+import { CalendarEvent, eventEquals, invokeGapiService } from "./services";
 
 export const [useCalendarList, calendarList$] = bind(
   invokeGapiService((service) => service.listCalendars()).pipe(
@@ -24,31 +32,46 @@ export const [useCalendarList, calendarList$] = bind(
   )
 );
 
-const [, eventsFromCalendar$] = bind((calendarId: string) =>
-  invokeGapiService((service) =>
-    service.listEvents({
-      calendarId,
-      timeMin: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
-      timeMax: endOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
-      showDeleted: false,
-      orderBy: "startTime",
-      singleEvents: true,
-    })
-  ).pipe(repeatWhen((notifier) => notifier.pipe(delay(60 * 1000))))
-);
+const eventUpserts = new Subject<CalendarEvent>();
+export const upsertEvent = (event: CalendarEvent) => eventUpserts.next(event);
 
-export const [, event$] = bind(
-  calendarList$.pipe(
-    switchMap((list) =>
-      combineLatest(
-        list.map((calendar) => eventsFromCalendar$(calendar.id))
-      ).pipe(
-        map((calendarEvents) =>
-          calendarEvents.reduce((acc, events) => [...acc, ...events])
-        )
+const [, eventsFromCalendar$] = bind((calendarId: string) =>
+  merge(of(0), interval(60 * 1000), eventUpserts).pipe(
+    switchMapTo(
+      invokeGapiService((service) =>
+        service.listEvents({
+          calendarId,
+          timeMin: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
+          timeMax: endOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
+          showDeleted: false,
+          orderBy: "startTime",
+          singleEvents: true,
+        })
       )
     )
   )
+);
+
+const loadedEvent$ = calendarList$.pipe(
+  switchMap((list) =>
+    combineLatest(
+      list.map((calendar) => eventsFromCalendar$(calendar.id))
+    ).pipe(
+      map((calendarEvents) =>
+        calendarEvents.reduce((acc, events) => [...acc, ...events])
+      )
+    )
+  )
+);
+
+export const event$ = loadedEvent$.pipe(
+  switchMap((loadedEvents) =>
+    eventUpserts.pipe(
+      scan((events, event) => [...events, event], loadedEvents),
+      startWith(loadedEvents)
+    )
+  ),
+  shareLatest()
 );
 
 export interface EventChange {
@@ -66,7 +89,10 @@ export const eventChanges$ = event$.pipe(
     const removedEvents: CalendarEvent[] = [];
 
     newValue.forEach((event) => {
-      if (!(event.id in keyedPrevious)) {
+      if (
+        !(event.id in keyedPrevious) ||
+        !eventEquals(event, keyedPrevious[event.id])
+      ) {
         newEvents.push(event);
       }
     });

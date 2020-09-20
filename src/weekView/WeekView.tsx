@@ -1,11 +1,11 @@
 import css from "@emotion/css";
 import { format } from "date-fns";
 import React, { FC } from "react";
-import { DAYS } from "./streams/constants";
 import { DailyTasks } from "./DailyTasks";
 import { DayEvents } from "./DayEvents";
 import { GridBackground } from "./GridBackground";
 import { LegendPadding } from "./LegendPadding";
+import { DAYS } from "./streams/constants";
 import { WeekTasks } from "./WeekTasks";
 
 export const WeekView: FC<{
@@ -95,8 +95,6 @@ const Events = () => {
                 border-right: none;
               }
             `}
-            onEventClick={(id) => console.log("event click", id)}
-            onNewEvent={(start, end) => console.log("new event", start, end)}
           />
         ))}
       </div>

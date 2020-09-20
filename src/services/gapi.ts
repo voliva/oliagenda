@@ -1,6 +1,6 @@
 import { Observable, from, ObservableInput } from "rxjs";
-import { share, distinctUntilChanged, switchMap } from "rxjs/operators";
-import { mapEventFromGoogle } from "./mappers";
+import { shareReplay, distinctUntilChanged, switchMap } from "rxjs/operators";
+import { mapEventFromGoogle, mapEventToGoogle } from "./mappers";
 import { CalendarEvent } from "./model";
 
 declare global {
@@ -17,6 +17,9 @@ interface GapiService {
   listEvents: (
     params: gapi.client.calendar.EventsListParameters
   ) => Promise<CalendarEvent[]>;
+  upsertEvent: (
+    event: CalendarEvent | Omit<CalendarEvent, "id">
+  ) => Promise<CalendarEvent>;
 }
 
 export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
@@ -41,18 +44,39 @@ export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
       const isSignedIn$ = new Observable<boolean>((obs) => {
         auth2.isSignedIn.listen(obs.next.bind(obs));
         obs.next(auth2.isSignedIn.get());
-      }).pipe(distinctUntilChanged(), share());
+      }).pipe(distinctUntilChanged(), shareReplay(1));
 
       resolve({
         isSignedIn$,
         signIn: () => auth2.signIn(),
         signOut: () => auth2.signOut(),
         listCalendars: () =>
-          gapi.client.calendar.calendarList.list().then(({ result }) => result),
+          gapi.client.calendar.calendarList.list().then(({ result }) => {
+            console.log(result);
+            return result;
+          }),
         listEvents: (params) =>
           gapi.client.calendar.events
             .list(params)
             .then(({ result }) => result.items.map(mapEventFromGoogle)),
+        upsertEvent: (event) =>
+          ("id" in event
+            ? gapi.client.calendar.events.update({
+                calendarId: event.calendarId,
+                eventId: event.id,
+                resource: mapEventToGoogle(event),
+              })
+            : gapi.client.calendar.events.insert({
+                calendarId: event.calendarId,
+                resource: mapEventToGoogle(event),
+              })
+          ).then((res) => {
+            if (res.status === 200) {
+              return mapEventFromGoogle(res.result);
+            }
+            console.error("received unexpected response", res);
+            throw new Error("Task failed succesfully");
+          }),
       });
     } catch (ex) {
       reject(ex);

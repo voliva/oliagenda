@@ -6,10 +6,10 @@ import {
   max,
   setHours,
 } from "date-fns";
-import React, { FC, useRef, MouseEvent } from "react";
-import { noop } from "rxjs";
+import React, { FC, MouseEvent, useRef } from "react";
 import { useResize } from "../lib";
 import { CalendarEvent } from "../services";
+import { onEventClick, onTimeClick } from "./actions";
 import { HOUR_RANGE, START_HOUR } from "./streams/constants";
 import { getTimePosition, useCurrentTimePos } from "./streams/time";
 import { useEventsByDay } from "./streams/weekViewEvents";
@@ -24,9 +24,7 @@ interface PrintableEvent extends CalendarEvent {
 export const DayEvents: FC<{
   className?: string;
   day: Date;
-  onEventClick?: (eventId: string) => void;
-  onNewEvent?: (startTime: Date, endTime: Date) => void;
-}> = ({ className, day, onEventClick = noop, onNewEvent = noop }) => {
+}> = ({ className, day }) => {
   const currentTimePos = useCurrentTimePos(day);
   const events = useEventsByDay(day);
   const containerHeight = useRef(0);
@@ -84,9 +82,8 @@ export const DayEvents: FC<{
     const pct = y / containerHeight.current;
     const minutes = pct * HOUR_RANGE * 60;
     const startOfDay = setHours(day, START_HOUR);
-    const start = addMinutes(startOfDay, Math.floor(minutes / 30) * 30);
-    const end = addMinutes(startOfDay, Math.floor(minutes / 30) * 30 + 60);
-    onNewEvent(start, end);
+    const timeClicked = addMinutes(startOfDay, minutes);
+    onTimeClick(timeClicked);
   };
 
   const handleEventClick = (id: string, event: MouseEvent) => {
