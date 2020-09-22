@@ -1,17 +1,42 @@
 import { bind, shareLatest } from "@react-rxjs/core";
 import { collect, split } from "@react-rxjs/utils";
 import { addDays, isSameDay, startOfDay } from "date-fns";
-import { EMPTY, of } from "rxjs";
+import { EMPTY, from, of } from "rxjs";
 import { startWithTimeout } from "rxjs-etc/dist/esm/operators";
 import { addDebugTag } from "rxjs-traces";
 import { concatMap, exhaustMap, mergeMap } from "rxjs/operators";
-import { accumulateEvents, coldEventChange$ } from "../../calendar";
+import {
+  accumulateEvents,
+  coldEventChange$,
+  EventChange,
+} from "../../calendar";
 import { CalendarEvent } from "../../services";
 import { categorizeEvent } from "./util";
 
 // Split into weekly-daily-time
 const categorizedEvent$ = coldEventChange$.pipe(
-  split(({ event }) => categorizeEvent(event))
+  split(
+    ({ event }) => categorizeEvent(event),
+    (group$) =>
+      group$.pipe(
+        concatMap((change) => {
+          if (change.action === "updated") {
+            // To handle events that change between days, we just remove the old one and add the new one
+            return from<EventChange[]>([
+              {
+                action: "removed",
+                event: change.previousEvent,
+              },
+              {
+                action: "new",
+                event: change.event,
+              },
+            ]);
+          }
+          return of(change);
+        })
+      )
+  )
 );
 
 const getDayKey = (date: Date) => startOfDay(date).toISOString();
@@ -60,10 +85,12 @@ const dailyEvents$ = categorizedEvent$.pipe(
               },
             });
           }
-          return result.map((evt) => ({
-            event: evt,
-            action,
-          }));
+          return result.map(
+            (evt): EventChange => ({
+              event: evt,
+              action: action as "new" | "removed",
+            })
+          );
         })
       );
     }

@@ -1,6 +1,7 @@
 import css from "@emotion/css";
 import React from "react";
 import { usePrintFontRatio } from "../lib";
+import { onEventClick } from "./actions";
 import { useWeeklyEvents } from "./streams/weekViewEvents";
 
 export const WeekTasks = () => {
@@ -20,7 +21,19 @@ export const WeekTasks = () => {
     >
       <div>Weekly tasks</div>
       {weeklyEvents.map((event) => (
-        <div key={event.id}>{event.title}</div>
+        <div
+          key={event.id}
+          css={css`
+            cursor: pointer;
+
+            &:hover {
+              text-decoration: underline;
+            }
+          `}
+          onClick={() => onEventClick(event.id)}
+        >
+          {event.title}
+        </div>
       ))}
     </div>
   );

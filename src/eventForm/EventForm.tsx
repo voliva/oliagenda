@@ -1,17 +1,43 @@
 import styled from "@emotion/styled";
-import { format } from "date-fns";
+import { bind } from "@react-rxjs/core";
+import { format, isAfter } from "date-fns";
 import React, { FC, FormEvent } from "react";
-import { cancelEdit } from "./eventEdited";
+import { combineLatest } from "rxjs";
+import { filter, map } from "rxjs/operators";
+import { isDefined, isNotSupsense } from "../lib";
+import { eventEquals } from "../services";
+import { cancelEdit, eventToEdit$ } from "./eventEdited";
 import {
   changeDatetime,
   changeDescription,
   changeTitle,
+  eventBeingEdited$,
   submitChanges,
   useEventBeingEdited,
+  useSubmitResultError,
 } from "./eventEditing";
+
+const [useFormValidation] = bind(
+  combineLatest([
+    eventToEdit$.pipe(filter(isDefined)),
+    eventBeingEdited$.pipe(filter(isNotSupsense)),
+  ]).pipe(
+    map(([initialEvent, eventBeingEdited]): [boolean] | [boolean, string] => {
+      if (initialEvent.id && eventEquals(initialEvent, eventBeingEdited)) {
+        return [false];
+      }
+      if (isAfter(eventBeingEdited.range.start, eventBeingEdited.range.end)) {
+        return [false, "Start date is before end date"];
+      }
+      return [true];
+    })
+  )
+);
 
 export const EventForm: FC = () => {
   const event = useEventBeingEdited();
+  const [canSave, error] = useFormValidation();
+  const serverError = useSubmitResultError();
 
   const handleSubmit = (evt: FormEvent) => {
     evt.preventDefault();
@@ -46,7 +72,9 @@ export const EventForm: FC = () => {
               changeDatetime("end", new Date(evt.target.value))
             }
           />
-          <input type="submit" value="Submit" />
+          <p>{error}</p>
+          <p>{serverError}</p>
+          <input type="submit" value="Save" disabled={!canSave} />
           <input type="button" value="Cancel" onClick={cancelEdit} />
         </form>
       </FormModal>

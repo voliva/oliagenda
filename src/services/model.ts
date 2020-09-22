@@ -9,9 +9,13 @@ export interface CalendarEvent {
     end: Date;
   };
   description: string;
+  originalEvent?: unknown;
 }
 
-export const eventEquals = (eventA: CalendarEvent, eventB: CalendarEvent) => {
+export const eventEquals = (
+  eventA: Partial<CalendarEvent>,
+  eventB: Partial<CalendarEvent>
+) => {
   const deepEqual = (a: any, b: any): boolean => {
     // Just checks for the shape above :point_up:
     if (typeof a === "object") {

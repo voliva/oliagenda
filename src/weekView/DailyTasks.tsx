@@ -4,6 +4,7 @@ import { usePrintFontRatio } from "../lib";
 import { DAYS } from "./streams/constants";
 import { LegendPadding } from "./LegendPadding";
 import { useDailyEvents } from "./streams/weekViewEvents";
+import { onEventClick } from "./actions";
 
 export const DailyTasks = () => {
   return (
@@ -53,7 +54,19 @@ const DayTasks: FC<{ day: Date; className?: string }> = ({
     >
       <div>Daily Tasks</div>
       {events.map((event) => (
-        <div key={event.id}>{event.title}</div>
+        <div
+          key={event.id}
+          css={css`
+            cursor: pointer;
+
+            &:hover {
+              text-decoration: underline;
+            }
+          `}
+          onClick={() => onEventClick(event.id)}
+        >
+          {event.title}
+        </div>
       ))}
     </div>
   );

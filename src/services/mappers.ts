@@ -12,12 +12,15 @@ export const mapEventFromGoogle = (
     end: getDateFromEvent(event.end),
   },
   description: event.description || "",
+  originalEvent: event,
 });
 
 export const mapEventToGoogle = (
   event: CalendarEvent | Omit<CalendarEvent, "id">
 ): gapi.client.calendar.EventInput => ({
-  id: "id" in event ? event.id : undefined,
+  ...(event.originalEvent
+    ? eventToEventInput(event.originalEvent as gapi.client.calendar.Event)
+    : {}),
   summary: event.title,
   description: event.description,
   ...getDateForEvent(event.range),
@@ -59,3 +62,7 @@ const getDateForEvent = (
     },
   };
 };
+
+const eventToEventInput = (
+  event: gapi.client.calendar.Event
+): gapi.client.calendar.EventInput => event as gapi.client.calendar.EventInput;

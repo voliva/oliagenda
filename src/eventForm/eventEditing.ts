@@ -1,15 +1,20 @@
 import { bind, SUSPENSE } from "@react-rxjs/core";
 import { mergeWithKey } from "@react-rxjs/utils";
-import { of, Subject } from "rxjs";
+import { merge, of, Subject } from "rxjs";
 import {
+  catchError,
   exhaustMap,
   filter,
+  map,
+  mapTo,
   scan,
+  share,
   startWith,
   switchMap,
   take,
 } from "rxjs/operators";
 import { upsertEvent } from "../calendar";
+import { isNotSupsense } from "../lib";
 import { invokeGapiService } from "../services";
 import { CalendarFormEvent, cancelEdit, eventToEdit$ } from "./eventEdited";
 
@@ -71,21 +76,40 @@ export const [useEventBeingEdited, eventBeingEdited$] = bind(
   )
 );
 
-formSubmits
-  .pipe(
-    switchMap(() =>
-      eventBeingEdited$.pipe(
-        take(1),
-        filter(
-          <T extends any>(v: T | typeof SUSPENSE): v is T => v !== SUSPENSE
-        )
-      )
-    ),
-    exhaustMap((event) =>
-      invokeGapiService((service) => service.upsertEvent(event))
+const formSubmissionResults = formSubmits.pipe(
+  switchMap(() => eventBeingEdited$.pipe(take(1), filter(isNotSupsense))),
+  exhaustMap((event) =>
+    invokeGapiService((service) => service.upsertEvent(event)).pipe(
+      map((result) => ({
+        type: "success" as const,
+        result,
+      })),
+      catchError((error) => {
+        console.error(error);
+        return of({
+          type: "error" as const,
+          error: error.result.error.message as string,
+        });
+      })
+    )
+  ),
+  share()
+);
+
+export const [useSubmitResultError] = bind(
+  merge(
+    of(null),
+    formSubmits.pipe(mapTo(null)),
+    formSubmissionResults.pipe(
+      filter(({ type }) => type === "error"),
+      map((value) => (value as any).error)
     )
   )
-  .subscribe((event) => {
-    upsertEvent(event);
+);
+
+formSubmissionResults.subscribe((event) => {
+  if (event.type === "success") {
+    upsertEvent(event.result);
     cancelEdit();
-  });
+  }
+});

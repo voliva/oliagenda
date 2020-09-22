@@ -13,6 +13,7 @@ import {
 } from "rxjs";
 import { addDebugTag } from "rxjs-traces";
 import {
+  filter,
   map,
   pairwise,
   scan,
@@ -36,7 +37,11 @@ const eventUpserts = new Subject<CalendarEvent>();
 export const upsertEvent = (event: CalendarEvent) => eventUpserts.next(event);
 
 const [, eventsFromCalendar$] = bind((calendarId: string) =>
-  merge(of(0), interval(60 * 1000), eventUpserts).pipe(
+  merge(
+    of(0),
+    interval(60 * 1000),
+    eventUpserts.pipe(filter((event) => event.calendarId === calendarId))
+  ).pipe(
     switchMapTo(
       invokeGapiService((service) =>
         service.listEvents({
@@ -71,13 +76,20 @@ export const event$ = loadedEvent$.pipe(
       startWith(loadedEvents)
     )
   ),
+  addDebugTag("event$"),
   shareLatest()
 );
 
-export interface EventChange {
-  action: "new" | "removed";
-  event: CalendarEvent;
-}
+export type EventChange =
+  | {
+      action: "new" | "removed";
+      event: CalendarEvent;
+    }
+  | {
+      action: "updated";
+      event: CalendarEvent;
+      previousEvent: CalendarEvent;
+    };
 export const eventChanges$ = event$.pipe(
   startWith([] as CalendarEvent[]),
   pairwise(),
@@ -86,14 +98,14 @@ export const eventChanges$ = event$.pipe(
     const keyedNew = keyBy(newValue, "id");
 
     const newEvents: CalendarEvent[] = [];
+    const updatedEvents: [CalendarEvent, CalendarEvent][] = [];
     const removedEvents: CalendarEvent[] = [];
 
     newValue.forEach((event) => {
-      if (
-        !(event.id in keyedPrevious) ||
-        !eventEquals(event, keyedPrevious[event.id])
-      ) {
+      if (!(event.id in keyedPrevious)) {
         newEvents.push(event);
+      } else if (!eventEquals(event, keyedPrevious[event.id])) {
+        updatedEvents.push([event, keyedPrevious[event.id]]);
       }
     });
     previous.forEach((event) => {
@@ -104,6 +116,11 @@ export const eventChanges$ = event$.pipe(
 
     return concat<EventChange>(
       newEvents.map((event) => ({ action: "new", event })),
+      updatedEvents.map(([event, previousEvent]) => ({
+        action: "updated",
+        event,
+        previousEvent,
+      })),
       removedEvents.map((event) => ({ action: "removed", event }))
     );
   }),
@@ -127,13 +144,14 @@ export const coldEventChange$ = merge(
       }))
     )
   )
-);
+).pipe(addDebugTag("coldEventChange$"), share()); // Again w/o share() tree looks like hell -.-"
 
 export const accumulateEvents = () => (event$: Observable<EventChange>) =>
   event$.pipe(
     scan((events, { action, event }) => {
       switch (action) {
         case "new":
+        case "updated":
           return {
             ...events,
             [event.id]: event,
