@@ -15,28 +15,23 @@ import { categorizeEvent } from "./util";
 
 // Split into weekly-daily-time
 const categorizedEvent$ = coldEventChange$.pipe(
-  split(
-    ({ event }) => categorizeEvent(event),
-    (group$) =>
-      group$.pipe(
-        concatMap((change) => {
-          if (change.action === "updated") {
-            // To handle events that change between days, we just remove the old one and add the new one
-            return from<EventChange[]>([
-              {
-                action: "removed",
-                event: change.previousEvent,
-              },
-              {
-                action: "new",
-                event: change.event,
-              },
-            ]);
-          }
-          return of(change);
-        })
-      )
-  )
+  concatMap((change) => {
+    if (change.action === "updated") {
+      // To handle events that change between days or categories, we just remove the old one and add the new one
+      return from<EventChange[]>([
+        {
+          action: "removed",
+          event: change.previousEvent,
+        },
+        {
+          action: "new",
+          event: change.event,
+        },
+      ]);
+    }
+    return of(change);
+  }),
+  split(({ event }) => categorizeEvent(event))
 );
 
 const getDayKey = (date: Date) => startOfDay(date).toISOString();

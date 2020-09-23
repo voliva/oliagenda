@@ -4,21 +4,24 @@ import {
   getDay,
   isEqual,
   isSameDay,
+  startOfDay,
 } from "date-fns";
 import { CalendarEvent } from "../../services";
 
 export function categorizeEvent(event: CalendarEvent) {
-  if (isSameDay(event.range.start, event.range.end)) {
-    return "time" as const;
-  }
+  const inDifferentDays = !isSameDay(event.range.start, event.range.end);
+  const isDateBased =
+    isEqual(event.range.start, startOfDay(event.range.start)) &&
+    isEqual(event.range.end, startOfDay(event.range.end));
 
-  if (isEqual(addDays(event.range.start, 1), event.range.end)) {
-    return "day" as const;
+  if (isDateBased || inDifferentDays) {
+    const diff = differenceInDays(event.range.end, event.range.start);
+    if (getDay(event.range.start) === 1 && diff === 7) {
+      return "week" as const;
+    } else if (diff <= 1) {
+      return "day" as const;
+    }
+    return "multi" as const;
   }
-
-  const diff = differenceInDays(event.range.end, event.range.start);
-  if (getDay(event.range.start) === 1 && diff === 7) {
-    return "week" as const;
-  }
-  return "multi" as const;
+  return "time" as const;
 }
