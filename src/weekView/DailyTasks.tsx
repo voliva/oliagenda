@@ -45,6 +45,7 @@ const DayTasks: FC<{ day: Date; className?: string }> = ({
         border: thin solid black;
         border-top: none;
         overflow: auto;
+        min-height: 1em;
 
         &:not(:last-child) {
           border-right: none;
@@ -54,7 +55,6 @@ const DayTasks: FC<{ day: Date; className?: string }> = ({
       `}
       className={className}
     >
-      <div>Daily Tasks</div>
       {events.map((event) => (
         <div
           key={event.id}

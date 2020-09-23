@@ -27,9 +27,28 @@ import {
 import { isSignedIn$ } from "./auth/auth";
 import { CalendarEvent, eventEquals, invokeGapiService } from "./services";
 
+export const [calendarToggles, toggleCalendar] = createListener<string>();
 export const [useCalendarList, calendarList$] = bind(
   invokeGapiService((service) => service.listCalendars()).pipe(
-    map((list) => list.items)
+    map((list) =>
+      list.items.map(({ id, summary }) => ({
+        id,
+        name: summary,
+        isActive: true,
+      }))
+    ),
+    switchMap((list) =>
+      calendarToggles.pipe(
+        scan((acc, id) => {
+          const target = acc.find((c) => c.id === id);
+          if (target) {
+            target.isActive = !target.isActive;
+          }
+          return [...acc];
+        }, list),
+        startWith(list)
+      )
+    )
   )
 );
 
@@ -71,10 +90,15 @@ const [, eventsFromCalendar$] = bind(
     )
 );
 
-const loadedEvent$ = combineLatest([calendarList$, activeDate$]).pipe(
+const loadedEvent$ = combineLatest([
+  calendarList$.pipe(map((list) => list.filter(({ isActive }) => isActive))),
+  activeDate$,
+]).pipe(
   switchMap(([list, activeDate]) =>
     combineLatest(
-      list.map((calendar) => eventsFromCalendar$(calendar.id, activeDate))
+      list.length === 0
+        ? [of([])]
+        : list.map((calendar) => eventsFromCalendar$(calendar.id, activeDate))
     ).pipe(
       map((calendarEvents) =>
         calendarEvents.reduce((acc, events) => [...acc, ...events])

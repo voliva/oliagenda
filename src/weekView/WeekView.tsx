@@ -4,6 +4,7 @@ import { startOfWeek } from "date-fns/esm";
 import React, { FC } from "react";
 import { take } from "rxjs/operators";
 import { activeDate$, changeDateRange } from "../calendar";
+import { toggleSideMenu } from "../sideMenu";
 import { DailyTasks } from "./DailyTasks";
 import { DayEvents } from "./DayEvents";
 import { GridBackground } from "./GridBackground";
@@ -56,27 +57,9 @@ const Headers = () => {
       `}
     >
       <LegendPadding>
-        <span
-          role="img"
-          aria-label="previous week"
-          onClick={previousWeek}
-          css={css`
-            cursor: pointer;
-          `}
-        >
-          ⬅️
-        </span>
-        |
-        <span
-          role="img"
-          aria-label="next week"
-          onClick={nextWeek}
-          css={css`
-            cursor: pointer;
-          `}
-        >
-          ➡️
-        </span>
+        <EmojiButton label="open menu" emoji="🍔" onClick={toggleSideMenu} />
+        <EmojiButton label="previous week" emoji="⬅️" onClick={previousWeek} />
+        <EmojiButton label="next week" emoji="➡️" onClick={nextWeek} />
       </LegendPadding>
       {days.map((day, i) => (
         <div
@@ -98,6 +81,27 @@ const Headers = () => {
     </div>
   );
 };
+
+const EmojiButton: FC<{
+  label: string;
+  emoji: string;
+  onClick?: () => void;
+}> = ({ label, emoji, ...props }) => (
+  <span
+    role="img"
+    aria-label={label}
+    css={css`
+      cursor: pointer;
+
+      @media print {
+        display: none;
+      }
+    `}
+    {...props}
+  >
+    {emoji}
+  </span>
+);
 
 const Events = () => {
   const days = useActiveDays();

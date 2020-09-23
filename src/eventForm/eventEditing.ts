@@ -19,8 +19,8 @@ import { invokeGapiService } from "../services";
 import { CalendarFormEvent, cancelEdit, eventToEdit$ } from "./eventEdited";
 
 export const [titleChanges, changeTitle] = createListener<string>();
-const [descriptionChanges, changeDescription] = createListener<string>();
-export { changeDescription };
+export const [descriptionChanges, changeDescription] = createListener<string>();
+export const [calendarChanges, changeCalendar] = createListener<string>();
 
 export const [datetimeChanges, changeDatetime] = createListener(
   (key: "start" | "end", value: Date) => ({
@@ -36,6 +36,7 @@ const createEventUpdatingStream = (initialEvent: CalendarFormEvent) =>
     titleChanges,
     descriptionChanges,
     datetimeChanges,
+    calendarChanges,
   }).pipe(
     scan((event, change) => {
       switch (change.type) {
@@ -48,6 +49,11 @@ const createEventUpdatingStream = (initialEvent: CalendarFormEvent) =>
           return {
             ...event,
             description: change.payload,
+          };
+        case "calendarChanges":
+          return {
+            ...event,
+            calendarId: change.payload,
           };
         case "datetimeChanges":
           return {

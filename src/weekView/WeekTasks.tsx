@@ -15,11 +15,11 @@ export const WeekTasks = () => {
         flex: 0 0 auto;
         overflow: auto;
         max-height: 25%;
+        min-height: 1em;
 
         ${printSize};
       `}
     >
-      <div>Weekly tasks</div>
       {weeklyEvents.map((event) => (
         <div
           key={event.id}

@@ -51,10 +51,7 @@ export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
         signIn: () => auth2.signIn(),
         signOut: () => auth2.signOut(),
         listCalendars: () =>
-          gapi.client.calendar.calendarList.list().then(({ result }) => {
-            console.log(result);
-            return result;
-          }),
+          gapi.client.calendar.calendarList.list().then(({ result }) => result),
         listEvents: (params) =>
           gapi.client.calendar.events
             .list(params)

@@ -7,7 +7,7 @@
     "@emotion/css": "^10.0.27",
     "@emotion/styled": "^10.0.27",
     "@react-rxjs/core": "^0.4.2",
-    "@react-rxjs/utils": "^0.3.0-alpha.1",
+    "@react-rxjs/utils": "^0.3.0-alpha.2",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",

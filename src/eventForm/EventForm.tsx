@@ -4,10 +4,12 @@ import { format, isAfter } from "date-fns";
 import React, { FC, FormEvent } from "react";
 import { combineLatest } from "rxjs";
 import { filter, map } from "rxjs/operators";
+import { useCalendarList } from "../calendar";
 import { isDefined, isNotSupsense } from "../lib";
 import { eventEquals } from "../services";
 import { cancelEdit, eventToEdit$ } from "./eventEdited";
 import {
+  changeCalendar,
   changeDatetime,
   changeDescription,
   changeTitle,
@@ -38,11 +40,26 @@ export const EventForm: FC = () => {
   const event = useEventBeingEdited();
   const [canSave, error] = useFormValidation();
   const serverError = useSubmitResultError();
+  const calendarList = useCalendarList();
+  const isNewEvent = event.id === undefined;
 
   const handleSubmit = (evt: FormEvent) => {
     evt.preventDefault();
     submitForm();
   };
+
+  const calendarSelector = isNewEvent ? (
+    <select
+      value={event.calendarId}
+      onChange={(evt) => changeCalendar(evt.target.value)}
+    >
+      {calendarList.map(({ id, name }) => (
+        <option key={id} value={id}>
+          {name}
+        </option>
+      ))}
+    </select>
+  ) : null;
 
   return (
     <FormBackdrop>
@@ -72,10 +89,11 @@ export const EventForm: FC = () => {
               changeDatetime("end", new Date(evt.target.value))
             }
           />
+          {calendarSelector}
           <p>{error}</p>
           <p>{serverError}</p>
           <input type="submit" value="Save" disabled={!canSave} />
-          <input type="button" value="Cancel" onClick={cancelEdit as any} />
+          <input type="button" value="Cancel" onClick={cancelEdit} />
         </form>
       </FormModal>
     </FormBackdrop>
