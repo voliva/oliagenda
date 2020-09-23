@@ -1,9 +1,5 @@
-import { Subject } from "rxjs";
+import { createListener } from "@react-rxjs/utils";
 
-const eventClicksSubject = new Subject<string>();
-export const eventClick$ = eventClicksSubject.asObservable();
-export const onEventClick = (id: string) => eventClicksSubject.next(id);
+export const [eventClick$, onEventClick] = createListener<string>();
 
-const timeClicksSubject = new Subject<Date>();
-export const timeClick$ = timeClicksSubject.asObservable();
-export const onTimeClick = (time: Date) => timeClicksSubject.next(time);
+export const [timeClick$, onTimeClick] = createListener<Date>();

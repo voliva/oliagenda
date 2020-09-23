@@ -1,4 +1,5 @@
 import { bind, shareLatest } from "@react-rxjs/core";
+import { createListener } from "@react-rxjs/utils";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { keyBy } from "lodash";
 import {
@@ -9,7 +10,6 @@ import {
   merge,
   Observable,
   of,
-  Subject,
 } from "rxjs";
 import { addDebugTag } from "rxjs-traces";
 import {
@@ -33,8 +33,7 @@ export const [useCalendarList, calendarList$] = bind(
   )
 );
 
-const eventUpserts = new Subject<CalendarEvent>();
-export const upsertEvent = (event: CalendarEvent) => eventUpserts.next(event);
+export const [eventUpserts, upsertEvent] = createListener<CalendarEvent>();
 
 const [, eventsFromCalendar$] = bind((calendarId: string) =>
   merge(

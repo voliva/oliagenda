@@ -2101,10 +2101,10 @@
   resolved "https://registry.yarnpkg.com/@react-rxjs/core/-/core-0.4.2.tgz#ad3be4544882759ad5b4a897426b95caf498480a"
   integrity sha512-AjTBtVGAlP0aI8/qsI2fRUirum01S37O8Rv1mJBUgdbboDYPNZ/wgIy7r3lv8TS3Yl1Dq4dag3lQg1aetgVRpA==
 
-"@react-rxjs/utils@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@react-rxjs/utils/-/utils-0.2.0.tgz#47e6d91fc5ef0350f8cca44683ce87a56c61e19a"
-  integrity sha512-KJHAdX2x9U1x7HMjXgFphX7N3S3ZuHlX7Wj600n2kJs9AZ6MoFS0r87XUWCiQlrmfgGtkiVMtGdyk53wkY/3Og==
+"@react-rxjs/utils@^0.3.0-alpha.1":
+  version "0.3.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/@react-rxjs/utils/-/utils-0.3.0-alpha.1.tgz#e003a2ef78826856dac534eeb4c403675da01902"
+  integrity sha512-MG+OjjbDHtpOVMMXp/vM7/mJ9EhS/R08JQm0NElAkY6wFNgRfXGGa4bwfnhseLIaFAWGNQ512tkW+XgokYvxhA==
 
 "@sheerun/mutationobserver-shim@^0.3.2":
   version "0.3.3"

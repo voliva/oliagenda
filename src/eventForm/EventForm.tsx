@@ -12,7 +12,7 @@ import {
   changeDescription,
   changeTitle,
   eventBeingEdited$,
-  submitChanges,
+  submitForm,
   useEventBeingEdited,
   useSubmitResultError,
 } from "./eventEditing";
@@ -41,7 +41,7 @@ export const EventForm: FC = () => {
 
   const handleSubmit = (evt: FormEvent) => {
     evt.preventDefault();
-    submitChanges();
+    submitForm();
   };
 
   return (

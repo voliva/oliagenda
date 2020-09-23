@@ -1,6 +1,7 @@
 import { bind, shareLatest } from "@react-rxjs/core";
+import { createListener } from "@react-rxjs/utils";
 import { addMinutes, differenceInMinutes, startOfDay } from "date-fns";
-import { defer, EMPTY, fromEvent, merge, Observable, Subject } from "rxjs";
+import { defer, EMPTY, fromEvent, merge, Observable } from "rxjs";
 import {
   filter,
   map,
@@ -27,8 +28,7 @@ const newCalendarEvent$ = timeClick$.pipe(
   })
 );
 
-const editManuallyCanceled = new Subject<void>();
-export const cancelEdit = () => editManuallyCanceled.next();
+export const [editManuallyCanceled, cancelEdit] = createListener();
 
 export type CalendarFormEvent = Omit<CalendarEvent, "id"> & {
   id?: string;

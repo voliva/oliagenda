@@ -1,6 +1,6 @@
 import { bind, SUSPENSE } from "@react-rxjs/core";
-import { mergeWithKey } from "@react-rxjs/utils";
-import { merge, of, Subject } from "rxjs";
+import { createListener, mergeWithKey } from "@react-rxjs/utils";
+import { merge, of } from "rxjs";
 import {
   catchError,
   exhaustMap,
@@ -18,22 +18,18 @@ import { isNotSupsense } from "../lib";
 import { invokeGapiService } from "../services";
 import { CalendarFormEvent, cancelEdit, eventToEdit$ } from "./eventEdited";
 
-const titleChanges = new Subject<string>();
-export const changeTitle = (title: string) => titleChanges.next(title);
+export const [titleChanges, changeTitle] = createListener<string>();
+const [descriptionChanges, changeDescription] = createListener<string>();
+export { changeDescription };
 
-const descriptionChanges = new Subject<string>();
-export const changeDescription = (description: string) =>
-  descriptionChanges.next(description);
-
-const datetimeChanges = new Subject<{ key: "start" | "end"; value: Date }>();
-export const changeDatetime = (key: "start" | "end", value: Date) =>
-  datetimeChanges.next({
+export const [datetimeChanges, changeDatetime] = createListener(
+  (key: "start" | "end", value: Date) => ({
     key,
     value,
-  });
+  })
+);
 
-const formSubmits = new Subject();
-export const submitChanges = () => formSubmits.next();
+export const [formSubmits, submitForm] = createListener();
 
 const createEventUpdatingStream = (initialEvent: CalendarFormEvent) =>
   mergeWithKey({
