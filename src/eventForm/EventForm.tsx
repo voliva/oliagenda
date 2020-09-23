@@ -75,7 +75,7 @@ export const EventForm: FC = () => {
           <p>{error}</p>
           <p>{serverError}</p>
           <input type="submit" value="Save" disabled={!canSave} />
-          <input type="button" value="Cancel" onClick={cancelEdit} />
+          <input type="button" value="Cancel" onClick={cancelEdit as any} />
         </form>
       </FormModal>
     </FormBackdrop>

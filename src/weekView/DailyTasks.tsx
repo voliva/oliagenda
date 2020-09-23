@@ -1,12 +1,14 @@
 import css from "@emotion/css";
 import React, { FC } from "react";
 import { usePrintFontRatio } from "../lib";
-import { DAYS } from "./streams/constants";
 import { LegendPadding } from "./LegendPadding";
 import { useDailyEvents } from "./streams/weekViewEvents";
 import { onEventClick } from "./actions";
+import { useActiveDays } from "./streams/time";
 
 export const DailyTasks = () => {
+  const days = useActiveDays();
+
   return (
     <div
       css={css`
@@ -16,7 +18,7 @@ export const DailyTasks = () => {
       `}
     >
       <LegendPadding />
-      {DAYS.map((day, d) => (
+      {days.map((day, d) => (
         <DayTasks
           key={d}
           day={day}

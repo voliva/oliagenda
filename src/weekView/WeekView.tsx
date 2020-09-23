@@ -1,11 +1,14 @@
 import css from "@emotion/css";
-import { format } from "date-fns";
+import { addWeeks, endOfWeek, format, subWeeks } from "date-fns";
+import { startOfWeek } from "date-fns/esm";
 import React, { FC } from "react";
+import { take } from "rxjs/operators";
+import { activeDate$, changeDateRange } from "../calendar";
 import { DailyTasks } from "./DailyTasks";
 import { DayEvents } from "./DayEvents";
 import { GridBackground } from "./GridBackground";
 import { LegendPadding } from "./LegendPadding";
-import { DAYS } from "./streams/constants";
+import { useActiveDays } from "./streams/time";
 import { WeekTasks } from "./WeekTasks";
 
 export const WeekView: FC<{
@@ -29,7 +32,22 @@ export const WeekView: FC<{
   );
 };
 
+const previousWeek = () =>
+  activeDate$.pipe(take(1)).subscribe((currentDate) => {
+    const start = subWeeks(startOfWeek(currentDate.start), 1);
+    const end = endOfWeek(start);
+    changeDateRange(start, end);
+  });
+const nextWeek = () =>
+  activeDate$.pipe(take(1)).subscribe((currentDate) => {
+    const start = addWeeks(startOfWeek(currentDate.start), 1);
+    const end = endOfWeek(start);
+    changeDateRange(start, end);
+  });
+
 const Headers = () => {
+  const days = useActiveDays();
+
   return (
     <div
       css={css`
@@ -37,8 +55,30 @@ const Headers = () => {
         display: flex;
       `}
     >
-      <LegendPadding />
-      {DAYS.map((day, i) => (
+      <LegendPadding>
+        <span
+          role="img"
+          aria-label="previous week"
+          onClick={previousWeek}
+          css={css`
+            cursor: pointer;
+          `}
+        >
+          ⬅️
+        </span>
+        |
+        <span
+          role="img"
+          aria-label="next week"
+          onClick={nextWeek}
+          css={css`
+            cursor: pointer;
+          `}
+        >
+          ➡️
+        </span>
+      </LegendPadding>
+      {days.map((day, i) => (
         <div
           key={i}
           css={css`
@@ -60,6 +100,8 @@ const Headers = () => {
 };
 
 const Events = () => {
+  const days = useActiveDays();
+
   return (
     <div
       css={css`
@@ -84,7 +126,7 @@ const Events = () => {
             border-color: black;
           `}
         />
-        {DAYS.map((day, i) => (
+        {days.map((day, i) => (
           <DayEvents
             key={i}
             day={day}

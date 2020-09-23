@@ -1,14 +1,22 @@
-import { differenceInCalendarDays, differenceInSeconds, set } from "date-fns";
 import { bind } from "@react-rxjs/core";
+import {
+  addDays,
+  differenceInCalendarDays,
+  differenceInSeconds,
+  set,
+  startOfWeek,
+} from "date-fns";
 import { interval } from "rxjs";
 import { startWithTimeout } from "rxjs-etc/operators";
 import {
-  startWith,
-  map,
-  takeWhile,
-  skipWhile,
   defaultIfEmpty,
+  distinctUntilChanged,
+  map,
+  skipWhile,
+  startWith,
+  takeWhile,
 } from "rxjs/operators";
+import { activeDate$ } from "../../calendar";
 import { END_HOUR, START_HOUR } from "./constants";
 
 const currentTime$ = interval(30 * 1000).pipe(
@@ -56,3 +64,11 @@ export const getTimePosition = (time: Date) => {
   const result = currentSeconds / totalSeconds;
   return result;
 };
+
+export const [useActiveDays, activeDays$] = bind(
+  activeDate$.pipe(
+    map(({ start }) => startOfWeek(start)),
+    distinctUntilChanged(),
+    map((start) => new Array(7).fill(0).map((_, i) => addDays(start, i)))
+  )
+);

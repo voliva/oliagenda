@@ -34,32 +34,47 @@ export const [useCalendarList, calendarList$] = bind(
 );
 
 export const [eventUpserts, upsertEvent] = createListener<CalendarEvent>();
+export const [
+  dateChanges,
+  changeDateRange,
+] = createListener((start: Date, end: Date) => ({ start, end }));
 
-const [, eventsFromCalendar$] = bind((calendarId: string) =>
-  merge(
-    of(0),
-    interval(60 * 1000),
-    eventUpserts.pipe(filter((event) => event.calendarId === calendarId))
-  ).pipe(
-    switchMapTo(
-      invokeGapiService((service) =>
-        service.listEvents({
-          calendarId,
-          timeMin: startOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
-          timeMax: endOfWeek(new Date(), { weekStartsOn: 1 }).toISOString(),
-          showDeleted: false,
-          orderBy: "startTime",
-          singleEvents: true,
-        })
+export const activeDate$ = dateChanges.pipe(
+  startWith({
+    start: startOfWeek(new Date(), { weekStartsOn: 1 }),
+    end: endOfWeek(new Date(), { weekStartsOn: 1 }),
+  }),
+  addDebugTag("activeDate$"),
+  shareLatest()
+);
+activeDate$.subscribe();
+
+const [, eventsFromCalendar$] = bind(
+  (calendarId: string, activeDate: { start: Date; end: Date }) =>
+    merge(
+      of(0),
+      interval(60 * 1000),
+      eventUpserts.pipe(filter((event) => event.calendarId === calendarId))
+    ).pipe(
+      switchMapTo(
+        invokeGapiService((service) =>
+          service.listEvents({
+            calendarId,
+            timeMin: activeDate.start.toISOString(),
+            timeMax: activeDate.end.toISOString(),
+            showDeleted: false,
+            orderBy: "startTime",
+            singleEvents: true,
+          })
+        )
       )
     )
-  )
 );
 
-const loadedEvent$ = calendarList$.pipe(
-  switchMap((list) =>
+const loadedEvent$ = combineLatest([calendarList$, activeDate$]).pipe(
+  switchMap(([list, activeDate]) =>
     combineLatest(
-      list.map((calendar) => eventsFromCalendar$(calendar.id))
+      list.map((calendar) => eventsFromCalendar$(calendar.id, activeDate))
     ).pipe(
       map((calendarEvents) =>
         calendarEvents.reduce((acc, events) => [...acc, ...events])
