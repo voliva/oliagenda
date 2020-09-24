@@ -1,4 +1,5 @@
 import { bind } from "@react-rxjs/core";
+import { createListener } from "@react-rxjs/utils";
 import {
   addDays,
   differenceInCalendarDays,
@@ -6,7 +7,7 @@ import {
   set,
   startOfWeek,
 } from "date-fns";
-import { interval } from "rxjs";
+import { combineLatest, interval } from "rxjs";
 import { startWithTimeout } from "rxjs-etc/operators";
 import {
   defaultIfEmpty,
@@ -17,7 +18,16 @@ import {
   takeWhile,
 } from "rxjs/operators";
 import { activeDate$ } from "../../calendar";
-import { END_HOUR, START_HOUR } from "./constants";
+
+export const [startHourChanges, setStartHour] = createListener<number>();
+export const [endHourChanges, setEndHour] = createListener<number>();
+
+export const [useTimeRange, timeRange$] = bind(
+  combineLatest([
+    startHourChanges.pipe(startWith(8)),
+    endHourChanges.pipe(startWith(20)),
+  ])
+);
 
 const currentTime$ = interval(30 * 1000).pipe(
   startWith(0),
@@ -25,15 +35,15 @@ const currentTime$ = interval(30 * 1000).pipe(
 );
 
 export const [useCurrentTimePos] = bind((date: Date) =>
-  currentTime$.pipe(
-    map((now) => {
+  combineLatest([currentTime$, timeRange$]).pipe(
+    map(([now, range]) => {
       const dayDiff = differenceInCalendarDays(now, date);
       if (dayDiff < 0) {
         return -1;
       } else if (dayDiff > 0) {
         return 2;
       }
-      return getTimePosition(now);
+      return getTimePosition(now, range);
     }),
     // Only keep stream alive for those that will show a bar in the future
     takeWhile((v) => v <= 1),
@@ -46,15 +56,15 @@ export const [useCurrentTimePos] = bind((date: Date) =>
   )
 );
 
-export const getTimePosition = (time: Date) => {
+export const getTimePosition = (time: Date, [start, end]: [number, number]) => {
   const startTime = set(time, {
-    hours: START_HOUR,
+    hours: start,
     minutes: 0,
     seconds: 0,
     milliseconds: 0,
   });
   const endTime = set(time, {
-    hours: END_HOUR,
+    hours: end,
     minutes: 0,
     seconds: 0,
     milliseconds: 0,

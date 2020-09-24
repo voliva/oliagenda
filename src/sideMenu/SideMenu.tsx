@@ -8,6 +8,7 @@ import {
   useMenuState,
   useMenuTransition,
 } from "./sideMenuState";
+import { TimeRangePicker } from "./TimeRangePicker";
 
 export const SideMenu = () => {
   const transitionState = useMenuState();
@@ -18,9 +19,10 @@ export const SideMenu = () => {
 
   return shouldRender ? (
     <SideMenuPanel shown={shown} onTransitionEnd={onTransitionEnd}>
-      Side menu <button onClick={toggleSideMenu}>Close</button>
+      <button onClick={toggleSideMenu}>Close</button>
       <hr />
       <CalendarSelector />
+      <TimeRangePicker />
     </SideMenuPanel>
   ) : null;
 };

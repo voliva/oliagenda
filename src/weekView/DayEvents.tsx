@@ -10,8 +10,11 @@ import React, { FC, MouseEvent, useRef } from "react";
 import { useResize } from "../lib";
 import { CalendarEvent } from "../services";
 import { onEventClick, onTimeClick } from "./actions";
-import { HOUR_RANGE, START_HOUR } from "./streams/constants";
-import { getTimePosition, useCurrentTimePos } from "./streams/time";
+import {
+  getTimePosition,
+  useCurrentTimePos,
+  useTimeRange,
+} from "./streams/time";
 import { useEventsByDay } from "./streams/weekViewEvents";
 
 interface PrintableEvent extends CalendarEvent {
@@ -26,6 +29,7 @@ export const DayEvents: FC<{
   day: Date;
 }> = ({ className, day }) => {
   const currentTimePos = useCurrentTimePos(day);
+  const timeRange = useTimeRange();
   const events = useEventsByDay(day);
   const containerHeight = useRef(0);
   const ref = useResize((rect) => (containerHeight.current = rect.height));
@@ -54,8 +58,8 @@ export const DayEvents: FC<{
           ...evt,
           level: l,
           positions: {
-            start: getTimePosition(evt.range.start),
-            end: getTimePosition(evt.range.end),
+            start: getTimePosition(evt.range.start, timeRange),
+            end: getTimePosition(evt.range.end, timeRange),
           },
         };
       }
@@ -80,8 +84,8 @@ export const DayEvents: FC<{
   const handleAreaClick = (evt: MouseEvent) => {
     const y = evt.nativeEvent.offsetY;
     const pct = y / containerHeight.current;
-    const minutes = pct * HOUR_RANGE * 60;
-    const startOfDay = setHours(day, START_HOUR);
+    const minutes = pct * (timeRange[1] - timeRange[0]) * 60;
+    const startOfDay = setHours(day, timeRange[0]);
     const timeClicked = addMinutes(startOfDay, minutes);
     onTimeClick(timeClicked);
   };

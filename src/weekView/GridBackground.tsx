@@ -1,8 +1,12 @@
 import css from "@emotion/css";
 import React from "react";
-import { HOURS } from "./streams/constants";
+import { useTimeRange } from "./streams/time";
 
 export const GridBackground = () => {
+  const [start, end] = useTimeRange();
+
+  const hours = new Array(end - start).fill(0).map((_, i) => start + i);
+
   return (
     <div
       css={css`
@@ -16,7 +20,7 @@ export const GridBackground = () => {
         overflow: hidden;
       `}
     >
-      {HOURS.map((hour) => (
+      {hours.map((hour) => (
         <div
           key={hour}
           css={css`
