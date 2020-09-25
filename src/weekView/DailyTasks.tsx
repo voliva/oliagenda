@@ -1,10 +1,10 @@
 import css from "@emotion/css";
 import React, { FC } from "react";
 import { usePrintFontRatio } from "../lib";
+import { onDayClick, onEventClick } from "./actions";
 import { LegendPadding } from "./LegendPadding";
-import { useDailyEvents } from "./streams/weekViewEvents";
-import { onEventClick } from "./actions";
 import { useActiveDays } from "./streams/time";
+import { useDailyEvents } from "./streams/weekViewEvents";
 
 export const DailyTasks = () => {
   const days = useActiveDays();
@@ -70,6 +70,9 @@ const DayTasks: FC<{ day: Date; className?: string }> = ({
           {event.title}
         </div>
       ))}
+      <button type="button" onClick={() => onDayClick(day)}>
+        New task
+      </button>
     </div>
   );
 };

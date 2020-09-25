@@ -1,5 +1,5 @@
 import { bind, shareLatest } from "@react-rxjs/core";
-import { createListener } from "@react-rxjs/utils";
+import { createListener, mergeWithKey } from "@react-rxjs/utils";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { keyBy } from "lodash";
 import {
@@ -53,6 +53,7 @@ export const [useCalendarList, calendarList$] = bind(
 );
 
 export const [eventUpserts, upsertEvent] = createListener<CalendarEvent>();
+export const [eventRemoves, removeEvent] = createListener<CalendarEvent>();
 export const [
   dateChanges,
   changeDateRange,
@@ -73,7 +74,8 @@ const [, eventsFromCalendar$] = bind(
     merge(
       of(0),
       interval(60 * 1000),
-      eventUpserts.pipe(filter((event) => event.calendarId === calendarId))
+      eventUpserts.pipe(filter((event) => event.calendarId === calendarId)),
+      eventRemoves.pipe(filter((event) => event.calendarId === calendarId))
     ).pipe(
       switchMapTo(
         invokeGapiService((service) =>
@@ -109,8 +111,24 @@ const loadedEvent$ = combineLatest([
 
 export const event$ = loadedEvent$.pipe(
   switchMap((loadedEvents) =>
-    eventUpserts.pipe(
-      scan((events, event) => [...events, event], loadedEvents),
+    mergeWithKey({
+      eventUpserts,
+      eventDeletes: eventRemoves,
+    }).pipe(
+      scan((events, change) => {
+        switch (change.type) {
+          case "eventDeletes":
+            return events.filter((evt) => evt.id !== change.payload.id);
+          case "eventUpserts":
+            const idx = events.findIndex((evt) => evt.id === change.payload.id);
+            if (idx >= 0) {
+              const ret = [...events];
+              ret[idx] = change.payload;
+              return ret;
+            }
+            return [...events, change.payload];
+        }
+      }, loadedEvents),
       startWith(loadedEvents)
     )
   ),

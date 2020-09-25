@@ -1,6 +1,13 @@
 import { bind, shareLatest } from "@react-rxjs/core";
 import { createListener } from "@react-rxjs/utils";
-import { addMinutes, differenceInMinutes, startOfDay } from "date-fns";
+import {
+  addDays,
+  addMinutes,
+  addWeeks,
+  differenceInMinutes,
+  startOfDay,
+  startOfWeek,
+} from "date-fns";
 import { defer, EMPTY, fromEvent, merge, Observable } from "rxjs";
 import {
   filter,
@@ -8,24 +15,45 @@ import {
   mapTo,
   startWith,
   switchMap,
+  switchMapTo,
   take,
   withLatestFrom,
 } from "rxjs/operators";
-import { calendarList$, event$ } from "../calendar";
+import { activeDate$, calendarList$, event$ } from "../calendar";
 import { CalendarEvent } from "../services";
-import { eventClick$, timeClick$ } from "../weekView/actions";
+import {
+  dayClick$,
+  eventClick$,
+  timeClick$,
+  weekClick$,
+} from "../weekView/actions";
 
-const newCalendarEvent$ = timeClick$.pipe(
-  map((date) => {
-    const reference = startOfDay(date);
-    const minutes = differenceInMinutes(date, reference);
-    const start = addMinutes(reference, Math.floor(minutes / 30) * 30);
-    const end = addMinutes(start, 60);
-    return {
-      start,
-      end,
-    };
-  })
+const newCalendarEvent$ = merge(
+  timeClick$.pipe(
+    map((date) => {
+      const reference = startOfDay(date);
+      const minutes = differenceInMinutes(date, reference);
+      const start = addMinutes(reference, Math.floor(minutes / 30) * 30);
+      const end = addMinutes(start, 60);
+      return {
+        start,
+        end,
+      };
+    })
+  ),
+  dayClick$.pipe(
+    map((date) => ({
+      start: startOfDay(date),
+      end: addDays(startOfDay(date), 1),
+    }))
+  ),
+  weekClick$.pipe(
+    switchMapTo(activeDate$),
+    map(({ start }) => ({
+      start: startOfWeek(start),
+      end: addWeeks(startOfWeek(start), 1),
+    }))
+  )
 );
 
 export const [editManuallyCanceled, cancelEdit] = createListener();

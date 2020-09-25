@@ -1,7 +1,7 @@
 import css from "@emotion/css";
 import React from "react";
 import { usePrintFontRatio } from "../lib";
-import { onEventClick } from "./actions";
+import { onEventClick, onWeekClick } from "./actions";
 import { useWeeklyEvents } from "./streams/weekViewEvents";
 
 export const WeekTasks = () => {
@@ -35,6 +35,9 @@ export const WeekTasks = () => {
           {event.title}
         </div>
       ))}
+      <button type="button" onClick={onWeekClick}>
+        New task
+      </button>
     </div>
   );
 };

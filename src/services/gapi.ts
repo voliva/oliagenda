@@ -20,6 +20,7 @@ interface GapiService {
   upsertEvent: (
     event: CalendarEvent | Omit<CalendarEvent, "id">
   ) => Promise<CalendarEvent>;
+  deleteEvent: (event: CalendarEvent) => Promise<void>;
 }
 
 export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
@@ -74,6 +75,13 @@ export const gapiService = new Promise<GapiService>(async (resolve, reject) => {
             console.error("received unexpected response", res);
             throw new Error("Task failed succesfully");
           }),
+        deleteEvent: (event: CalendarEvent) =>
+          gapi.client.calendar.events
+            .delete({
+              calendarId: event.calendarId,
+              eventId: event.id,
+            })
+            .then(() => void 0),
       });
     } catch (ex) {
       reject(ex);

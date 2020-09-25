@@ -7,15 +7,16 @@ import {
   filter,
   map,
   mapTo,
+  mergeMap,
   scan,
   share,
   startWith,
   switchMap,
   take,
 } from "rxjs/operators";
-import { upsertEvent } from "../calendar";
+import { removeEvent, upsertEvent } from "../calendar";
 import { isNotSupsense } from "../lib";
-import { invokeGapiService } from "../services";
+import { CalendarEvent, invokeGapiService } from "../services";
 import { CalendarFormEvent, cancelEdit, eventToEdit$ } from "./eventEdited";
 
 export const [titleChanges, changeTitle] = createListener<string>();
@@ -115,3 +116,17 @@ formSubmissionResults.subscribe((event) => {
     cancelEdit();
   }
 });
+
+export const [eventDeletions, deleteEvent] = createListener<CalendarEvent>();
+eventDeletions
+  .pipe(
+    mergeMap((event) =>
+      invokeGapiService((service) => service.deleteEvent(event)).pipe(
+        mapTo(event)
+      )
+    )
+  )
+  .subscribe((event) => {
+    removeEvent(event);
+    cancelEdit();
+  });

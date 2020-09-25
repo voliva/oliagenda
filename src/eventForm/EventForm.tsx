@@ -6,13 +6,14 @@ import { combineLatest } from "rxjs";
 import { filter, map } from "rxjs/operators";
 import { useCalendarList } from "../calendar";
 import { isDefined, isNotSupsense } from "../lib";
-import { eventEquals } from "../services";
+import { CalendarEvent, eventEquals } from "../services";
 import { cancelEdit, eventToEdit$ } from "./eventEdited";
 import {
   changeCalendar,
   changeDatetime,
   changeDescription,
   changeTitle,
+  deleteEvent,
   eventBeingEdited$,
   submitForm,
   useEventBeingEdited,
@@ -94,6 +95,13 @@ export const EventForm: FC = () => {
           <p>{serverError}</p>
           <input type="submit" value="Save" disabled={!canSave} />
           <input type="button" value="Cancel" onClick={cancelEdit} />
+          {event.id ? (
+            <input
+              type="button"
+              value="Delete"
+              onClick={() => deleteEvent(event as CalendarEvent)}
+            />
+          ) : null}
         </form>
       </FormModal>
     </FormBackdrop>
