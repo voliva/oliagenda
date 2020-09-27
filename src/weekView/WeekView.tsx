@@ -1,9 +1,9 @@
 import css from "@emotion/css";
-import { addWeeks, endOfWeek, format, subWeeks } from "date-fns";
-import { startOfWeek } from "date-fns/esm";
+import { addWeeks, format, subWeeks } from "date-fns";
 import React, { FC } from "react";
 import { take } from "rxjs/operators";
 import { activeDate$, changeDateRange } from "../calendar";
+import { endOfWeek, startOfWeek } from "../lib";
 import { toggleSideMenu } from "../sideMenu";
 import { DailyTasks } from "./DailyTasks";
 import { DayEvents } from "./DayEvents";

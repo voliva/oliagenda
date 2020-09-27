@@ -6,7 +6,6 @@ import {
   addWeeks,
   differenceInMinutes,
   startOfDay,
-  startOfWeek,
 } from "date-fns";
 import { defer, EMPTY, fromEvent, merge, Observable } from "rxjs";
 import {
@@ -21,6 +20,7 @@ import {
 } from "rxjs/operators";
 import { activeDate$, calendarList$, event$ } from "../calendar";
 import { CalendarEvent } from "../services";
+import { startOfWeek } from "../lib";
 import {
   dayClick$,
   eventClick$,

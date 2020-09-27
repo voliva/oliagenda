@@ -1,6 +1,5 @@
 import { bind, shareLatest } from "@react-rxjs/core";
 import { createListener, mergeWithKey } from "@react-rxjs/utils";
-import { endOfWeek, startOfWeek } from "date-fns";
 import { keyBy } from "lodash";
 import {
   combineLatest,
@@ -25,6 +24,7 @@ import {
   takeUntil,
 } from "rxjs/operators";
 import { isSignedIn$ } from "./auth/auth";
+import { endOfWeek, startOfWeek } from "./lib";
 import { CalendarEvent, eventEquals, invokeGapiService } from "./services";
 
 export const [calendarToggles, toggleCalendar] = createListener<string>();
@@ -61,8 +61,8 @@ export const [
 
 export const activeDate$ = dateChanges.pipe(
   startWith({
-    start: startOfWeek(new Date(), { weekStartsOn: 1 }),
-    end: endOfWeek(new Date(), { weekStartsOn: 1 }),
+    start: startOfWeek(new Date()),
+    end: endOfWeek(new Date()),
   }),
   addDebugTag("activeDate$"),
   shareLatest()

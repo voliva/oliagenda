@@ -5,7 +5,6 @@ import {
   differenceInCalendarDays,
   differenceInSeconds,
   set,
-  startOfWeek,
 } from "date-fns";
 import { combineLatest, interval } from "rxjs";
 import { startWithTimeout } from "rxjs-etc/operators";
@@ -18,6 +17,7 @@ import {
   takeWhile,
 } from "rxjs/operators";
 import { activeDate$ } from "../../calendar";
+import { startOfWeek } from "../../lib";
 
 export const [startHourChanges, setStartHour] = createListener<number>();
 export const [endHourChanges, setEndHour] = createListener<number>();
