@@ -10496,10 +10496,10 @@ rxjs-report-usage@~1.0.4:
     glob "~7.1.6"
     prompts "~2.3.2"
 
-rxjs-traces@^0.1.0-alpha.11:
-  version "0.1.0-alpha.11"
-  resolved "https://registry.yarnpkg.com/rxjs-traces/-/rxjs-traces-0.1.0-alpha.11.tgz#923e1457d7414536ebbb0ce49b25a81c5869d3f4"
-  integrity sha512-26O9F14lGA3zsY+/XhkZVUFMpijJNhqUC/Yp++1k2NytpX2Q+avjN6AlX96fyzeTyIj1yHajQVS9Y3qW7RnTPA==
+rxjs-traces@^0.1.0-alpha.12:
+  version "0.1.0-alpha.12"
+  resolved "https://registry.yarnpkg.com/rxjs-traces/-/rxjs-traces-0.1.0-alpha.12.tgz#09b3bf3c8efefa58507c162bb061157e1d87e2e8"
+  integrity sha512-0BoZU81rYlIm7VqTJYAy2+Jv0hd0QTJ86MtSiHomDhn+OZr3caQtHfJXAMDYJTeng7nN/ZYd/6u3YLtTfwWpcA==
   dependencies:
     uuid "^8.2.0"
 

@@ -1,4 +1,4 @@
-import { bind, shareLatest } from "@react-rxjs/core";
+import { bind } from "@react-rxjs/core";
 import { collect, split } from "@react-rxjs/utils";
 import { addDays, isSameDay, startOfDay } from "date-fns";
 import { EMPTY, from, of } from "rxjs";
@@ -44,8 +44,7 @@ const timeEventsByDay$ = categorizedEvent$.pipe(
     (group$) => group$.pipe(accumulateEvents())
   ),
   collect(),
-  addDebugTag("timeEventsByDay$"),
-  shareLatest()
+  addDebugTag("timeEventsByDay$")
 );
 
 export const [useEventsByDay] = bind((date: Date) =>
@@ -98,8 +97,7 @@ const dailyEvents$ = categorizedEvent$.pipe(
     (group$) => group$.pipe(accumulateEvents())
   ),
   collect(),
-  addDebugTag("dailyEvents$"),
-  shareLatest() // TODO Removing this share latest messes up the rxjs-traces tree
+  addDebugTag("dailyEvents$")
 );
 
 export const [useDailyEvents] = bind((date: Date) =>

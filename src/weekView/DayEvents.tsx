@@ -6,7 +6,7 @@ import {
   max,
   setHours,
 } from "date-fns";
-import React, { FC, MouseEvent, useRef } from "react";
+import React, { FC, MouseEvent, useCallback, useEffect, useRef } from "react";
 import { useResize } from "../lib";
 import { CalendarEvent } from "../services";
 import { onEventClick, onTimeClick } from "./actions";
@@ -135,40 +135,81 @@ const EventDisplay: FC<{
 }> = ({ event, ...rest }) => {
   const left = leftPositions[Math.min(event.level, MAX_LEVEL)];
   const right = rightPositions[Math.min(event.level, MAX_LEVEL)];
+  const ref = useDrag();
 
   return (
     <div
+      ref={ref}
       css={css`
         position: absolute;
-        background: #eab;
         top: ${event.positions.start * 100}%;
         bottom: ${(1 - event.positions.end) * 100}%;
         padding: 0.1rem;
         min-height: 1.2rem;
         left: ${left};
         right: ${right};
-        overflow: hidden;
-        border: thin solid white;
-        border-radius: 0.3rem;
-        transition: box-shadow 0.15s, transform 0.15s;
-
-        &:hover {
-          z-index: 1;
-          box-shadow: 1px 1px 5px 0px rgba(0, 0, 0, 0.75);
-          transform: translate(-50%, -50%) scale(1.02) translate(50%, 50%)
-            translateX(0.1rem);
-        }
-
-        @media print {
-          background: white;
-          color: black;
-          border: thin solid black;
-          right: 0;
-        }
+        display: flex;
       `}
       {...rest}
     >
-      {event.title}
+      <div
+        ref={ref}
+        css={css`
+          background: #eab;
+          border: thin solid white;
+          border-radius: 0.3rem;
+          flex: 1 1 auto;
+          overflow: hidden;
+          transition: box-shadow 0.15s, transform 0.15s;
+
+          &:hover {
+            z-index: 1;
+            box-shadow: 1px 1px 5px 0px rgba(0, 0, 0, 0.75);
+            transform: translate(-50%, -50%) scale(1.02) translate(50%, 50%)
+              translateX(0.1rem);
+          }
+
+          @media print {
+            background: white;
+            color: black;
+            border: thin solid black;
+            right: 0;
+          }
+        `}
+      >
+        {event.title}
+      </div>
     </div>
   );
+};
+
+const useDrag = () => {
+  // const range = useTimeRange();
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  const handleMouseDown = useCallback((evt: globalThis.MouseEvent) => {
+    const startMousePos = [evt.screenX, evt.screenY];
+    const handleMouseMove = (move: globalThis.MouseEvent) => {
+      ref.current!.style.transform = `translateY(${
+        move.screenY - startMousePos[1]
+      }px)`;
+    };
+    const handleMouseUp = (up: globalThis.MouseEvent) => {
+      up.stopPropagation();
+      ref.current!.style.transform = "";
+
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }, []);
+
+  useEffect(() => {
+    const element = ref.current!;
+    element.addEventListener("mousedown", handleMouseDown);
+    return () => element.removeEventListener("mousedown", handleMouseDown);
+  }, [handleMouseDown]);
+
+  return ref;
 };

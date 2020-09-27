@@ -27,6 +27,7 @@ import {
   timeClick$,
   weekClick$,
 } from "../weekView/actions";
+import { addDebugTag } from "rxjs-traces";
 
 const newCalendarEvent$ = merge(
   timeClick$.pipe(
@@ -101,4 +102,4 @@ const editCancelled: Observable<void> = merge(
   isEditingEvent$.pipe(
     switchMap((isEditing) => (isEditing ? escapePresses : EMPTY))
   )
-).pipe(mapTo(void 0));
+).pipe(mapTo(void 0), addDebugTag("editCancelled"));
